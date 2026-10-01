@@ -1,0 +1,244 @@
+/* Tela inicial: funcional e limpa por enquanto (o visual ainda vai ganhar um upgrade). */
+
+.inicio__titulo {
+  margin: 0 0 16px;
+  font-size: 1.75rem;
+}
+
+.secao {
+  margin-top: 32px;
+}
+
+.secao h2 {
+  margin: 0 0 12px;
+  font-size: 1.25rem;
+}
+
+.secao h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.secao p {
+  margin: 4px 0 0;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Textos longos (títulos de vídeo) quebram em vez de empurrar a tela para o lado. */
+.resultado__texto,
+.tarefa__texto,
+.musica__texto,
+.versao__texto {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.aviso {
+  color: var(--atencao);
+  font-size: 0.875rem;
+}
+
+/* ---------- busca ---------- */
+
+.busca__form {
+  display: flex;
+  gap: 8px;
+}
+
+.busca__campo {
+  flex: 1;
+  min-width: 0;
+}
+
+.resultado__linha {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.resultado__miniatura {
+  flex: none;
+  width: 120px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-pequeno);
+  background: var(--border);
+}
+
+.resultado__modos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.resultado__modos legend {
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.resultado__modo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.resultado__modo input {
+  accent-color: var(--roxo);
+}
+
+.resultado__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.resultado__na-fila {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--destaque);
+  font-weight: 500;
+}
+
+.previa {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.previa__video {
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: var(--radius-pequeno);
+  background: #000;
+}
+
+/* ---------- fila ---------- */
+
+.tarefa__topo {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.tarefa--pronta .tarefa__estado {
+  color: var(--ok);
+}
+
+.tarefa--erro .tarefa__estado {
+  color: var(--perigo);
+}
+
+/* ---------- minhas músicas ---------- */
+
+.musica__linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.musica__titulo a {
+  text-decoration: none;
+}
+
+.musica__titulo a:hover {
+  text-decoration: underline;
+}
+
+.musica__acoes {
+  display: flex;
+  gap: 6px;
+}
+
+.musica__acoes .botao[aria-pressed='true'] {
+  border-color: var(--roxo);
+  color: var(--destaque);
+}
+
+/* ---------- diálogos ---------- */
+
+.versao {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.fundo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fundo__capas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.fundo__capa {
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pequeno);
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.fundo__capa img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.fundo__capa[aria-pressed='true'] {
+  border-color: var(--destaque);
+}
+
+.fundo__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fundo__sem-imagem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fundo__acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .resultado__miniatura {
+    width: 88px;
+  }
+}
