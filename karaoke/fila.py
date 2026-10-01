@@ -143,21 +143,27 @@ class Fila:
     def _procurar_versao_pronta(self, tarefa, original, pasta):
         """Devolve (faixas, extras) com a versão pronta, ou (None, extras) para separar com IA."""
         self._atualizar(tarefa, estado=PROCURANDO, progresso=_FIM_DOWNLOAD)
-        versao = self._preparar_versao(
-            original, pasta, tarefa.titulo, tarefa.artista, tarefa.duracao, tarefa.id_video,
-            lambda fracao: self._atualizar(
-                tarefa, progresso=round(_FIM_DOWNLOAD + fracao * (_FIM_PROCURA - _FIM_DOWNLOAD), 3)),
-        )
+        motivo = "Nenhuma versão pronta serviu"
+        try:
+            versao = self._preparar_versao(
+                original, pasta, tarefa.titulo, tarefa.artista, tarefa.duracao, tarefa.id_video,
+                lambda fracao: self._atualizar(
+                    tarefa, progresso=round(_FIM_DOWNLOAD + fracao * (_FIM_PROCURA - _FIM_DOWNLOAD), 3)),
+            )
+        except Exception:
+            # YouTube recusou a busca, internet caiu...: a original já está baixada, então
+            # separa com IA em vez de perder tudo
+            versao, motivo = None, "A procura da versão pronta falhou"
         if versao is not None:
             return [versao.faixa], {"modo": MODO_PRONTA, "versao_pronta": versao.para_dict()}
         reserva = MODOS[self.modo_reserva]
-        aviso = f"Nenhuma versão pronta serviu; separada com IA (modo {reserva.descricao})."
+        aviso = f"{motivo}; separada com IA (modo {reserva.descricao})."
         self._atualizar(tarefa, aviso=aviso)
         return None, {"modo": reserva.nome, "aviso": aviso}
 
     def _separar_com_ia(self, tarefa, original, pasta, modo):
-        inicio = tarefa.progresso
-        self._atualizar(tarefa, estado=SEPARANDO)
+        inicio = max(tarefa.progresso, _FIM_DOWNLOAD)  # o download pode não ter avisado 100%
+        self._atualizar(tarefa, estado=SEPARANDO, progresso=inicio)
 
         def ao_mudar_etapa(numero, total):
             # A etapa 1 fica com 2/3 do que falta até a análise, a etapa 2 com o resto

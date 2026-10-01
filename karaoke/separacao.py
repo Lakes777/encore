@@ -78,7 +78,7 @@ def obter_modo(nome):
     try:
         return MODOS[nome]
     except KeyError:
-        raise ValueError(f"Modo desconhecido: {nome!r}. Use {' ou '.join(MODOS)}.") from None
+        raise ValueError(f"Modo de separação desconhecido: {nome!r}. Use {' ou '.join(MODOS)}.") from None
 
 
 def estimar_segundos(nome_modo, dispositivo, duracao):

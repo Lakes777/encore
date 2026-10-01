@@ -80,6 +80,12 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
                           · versão pronta
                         </span>
                       )}
+                      {musica.aviso && (
+                        <span title={musica.aviso}>
+                          {' '}
+                          · sem versão pronta
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="musica__acoes">

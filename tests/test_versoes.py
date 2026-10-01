@@ -15,6 +15,7 @@ from karaoke.versoes import (
     preparar_versao_pronta,
     procurar_candidatos,
     texto_da_busca,
+    VersaoPronta,
 )
 
 # ---------- cromagramas de mentira ----------
@@ -125,6 +126,11 @@ def test_texto_da_busca():
     assert texto_da_busca("Avenged Sevenfold - Bat Country", "lavenged7xl") == "Avenged Sevenfold - Bat Country"
     assert texto_da_busca("Coldplay - Yellow - Remastered", "Brian Martens Music") == "Coldplay - Yellow"
     assert texto_da_busca("Yellow - Coldplay HQ Audio", "HypeMusic") == "Yellow - Coldplay"
+    assert texto_da_busca("Help! - Remastered 2009", "The Beatles") == "The Beatles Help!"
+    # Palavras de enfeite que são parte do nome ficam
+    assert texto_da_busca("Prince - 1999 (Official Music Video)", "PrinceVEVO") == "Prince - 1999"
+    assert texto_da_busca("1979", "The Smashing Pumpkins") == "The Smashing Pumpkins 1979"
+    assert texto_da_busca("Video Killed the Radio Star", "The Buggles") == "The Buggles Video Killed the Radio Star"
 
 
 def test_candidatos_sem_repetir_sem_a_original_e_com_duracao_parecida():
@@ -214,6 +220,7 @@ def test_escolhe_a_que_bate_alinha_e_apaga_os_candidatos(tmp_path):
     assert (tmp_path / "instrumental.wav").read_bytes() == b"alinhado"
     assert cenario.alinhado[0] == "boa".ljust(11, "x")
     assert versao.para_dict()["velocidade_corrigida"] == pytest.approx(2.0, abs=0.3)
+    assert VersaoPronta(versao.faixa, "x", "", "", Comparacao(0.001, 0, 1, 0)).velocidade_corrigida == 0
     assert not (tmp_path / "candidatos").exists()
     assert progresso[0] == 0 and progresso[-1] == 1.0
 

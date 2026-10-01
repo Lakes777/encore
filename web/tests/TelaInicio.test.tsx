@@ -147,7 +147,7 @@ describe('busca', () => {
     const item = (await screen.findByRole('heading', { name: 'Help! (Remastered 2009)' })).closest('li')!
     expect(await within(item).findByRole('radio', { name: /Versão pronta/ })).toBeChecked()
     expect(within(item).getByText('até ~3 min')).toBeInTheDocument()
-    expect(within(item).getByText(/se nenhum servir, separa com IA \(Rápida\)/)).toBeInTheDocument()
+    expect(within(item).getByText(/se nenhum servir, separa com IA \(\s*Rápida\)/)).toBeInTheDocument()
     await usuario.click(within(item).getByRole('button', { name: 'Adicionar' }))
     expect(chamadas.adicionarNaFila).toHaveBeenCalledWith(expect.objectContaining({ modo: 'pronta' }))
   })
@@ -311,6 +311,12 @@ describe('minhas músicas', () => {
     ])
     render(<TelaInicio />)
     expect(await screen.findByTitle('Instrumental: Help! (Instrumental) (Canal)')).toHaveTextContent('versão pronta')
+  })
+
+  it('mostra quando a música caiu na separação com IA', async () => {
+    chamadas.musicas.mockResolvedValue([musica({ aviso: 'Nenhuma versão pronta serviu; separada com IA (modo Rápida).' })])
+    render(<TelaInicio />)
+    expect(await screen.findByTitle(/Nenhuma versão pronta serviu/)).toHaveTextContent('sem versão pronta')
   })
 
   it('explica o que fazer quando não há músicas', async () => {

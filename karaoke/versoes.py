@@ -202,16 +202,25 @@ def _cromagrama_com_librosa(caminho):
 
 
 # Palavras soltas que atrapalham a busca ("Coldplay - Yellow - Remastered")
-_RUIDO = re.compile(r"\b(remaster(ed)?|official|oficial|video|v[ií]deo|audio|[aá]udio|lyrics?|letra|hd|hq|4k|\d{4})\b",
-                    re.IGNORECASE)
+# Palavras de enfeite que sobram soltas NO FIM do título ("Coldplay - Yellow - Remastered",
+# "Yellow - Coldplay HQ Audio"). Só no fim: "Video Killed the Radio Star" e "1999" são nomes.
+_ENFEITE_FINAL = re.compile(
+    r"(\s*[-–|]\s*|\s+)(remaster(ed)?(\s+\d{4})?|official|oficial|music|video|v[ií]deo|audio|[aá]udio|lyrics?|letra"
+    r"|hd|hq|4k)\s*$",
+    re.IGNORECASE,
+)
+
+
+def _sem_enfeites_no_fim(titulo):
+    while (sem := _ENFEITE_FINAL.sub("", titulo)) != titulo:
+        titulo = sem
+    return re.sub(r"(\s*[-–|]\s*)+$", "", titulo).strip()
 
 
 def texto_da_busca(titulo, artista=""):
     """'The Beatles - Help! (Remastered 2009)' -> 'The Beatles Help!'."""
     titulo, artista = limpar_titulo(titulo, artista)
-    # Tira as palavras de enfeite e os " - " que sobram pendurados no fim
-    titulo = re.sub(r"(\s*[-–|]\s*)+$", "", _RUIDO.sub("", titulo)).strip()
-    titulo = re.sub(r"\s{2,}", " ", titulo)
+    titulo = _sem_enfeites_no_fim(titulo)
     # Se o título ainda tem "X - Y", o canal não era o artista: o título basta
     return titulo if " - " in titulo or not artista else f"{artista} {titulo}"
 
@@ -247,13 +256,20 @@ class VersaoPronta:
     canal: str
     comparacao: Comparacao
 
+    @property
+    def velocidade_corrigida(self):
+        """% que o upload estava acelerado (negativo = desacelerado); 0 se nada foi corrigido."""
+        if not self.comparacao.corrigir_velocidade:
+            return 0.0
+        return round((1 / (1 - self.comparacao.inclinacao) - 1) * 100, 1)
+
     def para_dict(self):
         """O que vai para o musica.json, para a tela mostrar de onde veio o instrumental."""
         return {
             "id_video": self.id_video, "titulo": self.titulo, "canal": self.canal,
             "semelhanca": round(self.comparacao.semelhanca, 3),
             # % de velocidade corrigida (positivo = o upload estava acelerado)
-            "velocidade_corrigida": round(self.comparacao.inclinacao * 100, 1),
+            "velocidade_corrigida": self.velocidade_corrigida,
         }
 
 

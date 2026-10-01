@@ -257,6 +257,19 @@ def test_procura_com_os_dados_da_musica(tmp_path):
     assert preparar.pedido == ("Yellow", "Coldplay", 269, "yKNxeF4KMsY")
 
 
+def test_procura_que_falha_cai_na_separacao(tmp_path):
+    def preparar_quebrado(*args):
+        raise OSError("YouTube recusou a busca")
+
+    fila = fila_falsa(tmp_path, preparar_versao=preparar_quebrado)
+    tarefa = fila.adicionar("yKNxeF4KMsY", "Yellow", modo=MODO_PRONTA)
+    fila.processar_proxima()
+    pronta = fila.tarefas()[0]
+    assert (pronta.estado, pronta.erro) == (PRONTA, None)
+    assert pronta.aviso == "A procura da versão pronta falhou; separada com IA (modo Rápida)."
+    assert (tmp_path / tarefa.id / "original.wav").exists()
+
+
 def test_modo_reserva_precisa_existir(tmp_path):
     with pytest.raises(ValueError):
         fila_falsa(tmp_path, modo_reserva="pronta")

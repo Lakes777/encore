@@ -169,7 +169,8 @@ function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, 
       )}
       {modo === 'pronta' && sistema && !estaNaFila && (
         <p className="texto-fraco">
-          Procura um instrumental pronto no YouTube; se nenhum servir, separa com IA ({nomeDoModo(sistema.modo_reserva, sistema)}).
+          Procura um instrumental pronto no YouTube; se nenhum servir, separa com IA (
+          {nomeDoModo(sistema.modo_reserva, sistema)}), o que soma o tempo da separação.
         </p>
       )}
       {modo === 'qualidade' && sistema?.dispositivo === 'cpu' && !estaNaFila && (
