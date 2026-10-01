@@ -43,14 +43,18 @@ duração. Os pedaços vão para uma pasta temporária dentro da pasta da músic
 
 ## Como rodar
 
-Precisa do Python 3.10+ e do [ffmpeg](https://ffmpeg.org) instalado.
+Precisa do Python 3.10+, do [ffmpeg](https://ffmpeg.org) e do Node 22.12+ (só para compilar o site).
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python -m karaoke          # http://127.0.0.1:8000/docs mostra as rotas
+(cd web && npm ci && npm run build)   # compila o site em web/dist
+python -m karaoke                     # abra http://127.0.0.1:8000 (as rotas em /docs)
 ```
+
+Para mexer no site com recarga automática: deixe o `python -m karaoke` rodando e, em outro
+terminal, `cd web && npm run dev` (o Vite repassa `/api` para a porta 8000).
 
 Variáveis opcionais: `KARAOKE_DADOS` (pasta das músicas, padrão `dados`), `KARAOKE_MODELOS`
 (pasta dos modelos de IA, padrão `modelos`; são baixados na primeira separação) e `PORT`.
@@ -74,6 +78,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt   # leve: não instala a IA
 pytest
+
+cd web && npm test                    # site: Vitest + Testing Library
 ```
 
 ## Estrutura
@@ -99,6 +105,11 @@ tests/
   test_analise_fila.py
   test_api.py
   test_letras_capas.py
+web/                 # Site em React + TypeScript (Vite)
+  src/logica/        # Cliente da API, tipos, letra e sincronia das faixas (funções puras)
+  src/componentes/   # Busca, fila, lista, diálogos de letra e fundo, volumes, letra
+  src/telas/         # TelaInicio (busca, fila e músicas) e TelaMusica (o player)
+  tests/
 ```
 
 ## Decisões técnicas
@@ -120,6 +131,14 @@ tests/
   notebook; "Alta" (Roformer) é bem melhor, mas pede placa de vídeo. O app detecta se há GPU NVIDIA para
   escolher o padrão e mostra o tempo estimado de cada modo, calculado a partir das medições acima.
 
+- **Um `<audio>` por faixa, com um relógio mestre.** Em vez de decodificar todos os WAV na RAM
+  (Web Audio), cada faixa é lida aos poucos do servidor. A primeira faixa separada é o relógio,
+  e as outras são puxadas de volta quando se afastam mais de 80 ms dela (menos as que ainda estão
+  carregando um trecho, para não cancelar a busca). No futuro isso também permite mudar a
+  velocidade sem mudar o tom (`playbackRate` + `preservesPitch`).
+- **Prévia pelo arquivo baixado.** O player embutido do YouTube recusa muitas músicas de
+  gravadora quando o site é local; para as músicas já baixadas, a prévia toca o áudio original.
+
 ## Próximos passos
 
 Fase 1: karaokê
@@ -131,7 +150,8 @@ Fase 1: karaokê
 - [x] Letras sincronizadas do LRCLIB (versões com duração parecida primeiro) e capas do iTunes
 - [x] API (FastAPI): busca com estimativa por modo, fila, lista de músicas e faixas com Range
 - [x] Separar em pedaços de 60 s: o pico de RAM fica em ~3,1 GB qualquer que seja a duração (Help! inteira, 2:19, em 9 min na CPU)
-- [ ] Telas (React): busca com prévia, lista, tela da música (letra sincronizada, volumes, tela cheia, fundo com desfoque)
+- [x] Telas (React): busca com prévia e seletor Rápida/Alta, fila, lista, tela da música (letra sincronizada, volumes, tocar a original, tela cheia, fundo com desfoque)
+- [ ] Salvar os volumes de cada música e "refazer em Alta"
 
 Fase 2: versões prontas
 - [ ] Procurar primeiro a versão instrumental/karaokê oficial; separar com IA só se não houver
