@@ -6,7 +6,7 @@ Karaokê que roda no próprio computador: você busca uma música do YouTube, o 
 a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra a
 **letra sincronizada** enquanto a música toca, com um volume para cada faixa.
 
-> **Em desenvolvimento.** Por enquanto existe só a base (a música como lista de faixas).
+> **Em desenvolvimento.** Por enquanto existem a base (a música como lista de faixas) e a busca no YouTube.
 
 > **Atenção:** projeto de estudo, para uso pessoal e local. Baixar áudio do YouTube vai
 > contra os termos de uso da plataforma, por isso o app não é hospedado publicamente.
@@ -50,8 +50,10 @@ pytest
 ```
 karaoke/
   faixas.py      # Música como lista de faixas, cada uma com nome, arquivo e volume
+  busca.py       # Busca no YouTube (yt-dlp) pelo nome ou pelo link colado
 tests/
   test_faixas.py
+  test_busca.py  # O yt-dlp é trocado por um falso: roda sem internet
 ```
 
 ## Decisões técnicas
@@ -64,7 +66,7 @@ tests/
 
 Fase 1: karaokê
 - [x] Base: música como lista de faixas, com volume e tom/escala
-- [ ] Busca no YouTube com prévia (yt-dlp)
+- [x] Busca no YouTube pelo nome ou pelo link, com o ponto de início da prévia (yt-dlp)
 - [ ] Fila: baixar, separar (audio-separator) e analisar o tom e a escala (librosa), com progresso
 - [ ] Letras sincronizadas do LRCLIB e capas do iTunes
 - [ ] API (FastAPI) e tela da música (letra sincronizada, volumes, tela cheia, fundo com desfoque)
