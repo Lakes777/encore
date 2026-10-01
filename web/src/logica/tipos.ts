@@ -1,10 +1,15 @@
 // Formatos que a API (karaoke/api.py) devolve. Os nomes seguem o JSON dela.
 
-export type NomeModo = 'rapido' | 'qualidade'
+/** 'pronta' = procurar um instrumental pronto no YouTube antes de separar com IA. */
+export type NomeModo = 'pronta' | 'rapido' | 'qualidade'
+export type ModoDeSeparacao = Exclude<NomeModo, 'pronta'>
 
 export interface Sistema {
   dispositivo: 'cpu' | 'cuda'
-  modo_padrao: NomeModo
+  /** Modo de separação que este computador aguenta bem. */
+  modo_padrao: ModoDeSeparacao
+  /** Com que modo separar quando nenhuma versão pronta serve. */
+  modo_reserva: ModoDeSeparacao
   modos: { nome: NomeModo; descricao: string }[]
 }
 
@@ -21,7 +26,14 @@ export interface ResultadoBusca {
   estimativas: Record<NomeModo, number | null>
 }
 
-export type EstadoTarefa = 'na fila' | 'baixando' | 'separando' | 'analisando' | 'pronta' | 'erro'
+export type EstadoTarefa =
+  | 'na fila'
+  | 'baixando'
+  | 'procurando versão pronta'
+  | 'separando'
+  | 'analisando'
+  | 'pronta'
+  | 'erro'
 
 export interface Tarefa {
   id: string
@@ -34,6 +46,8 @@ export interface Tarefa {
   /** De 0 a 1. */
   progresso: number
   erro: string | null
+  /** Ex.: nenhuma versão pronta serviu e a música foi separada com IA. */
+  aviso: string | null
 }
 
 /**
@@ -73,7 +87,19 @@ export interface Musica {
   letra_sincronizada?: boolean
   letra_id?: number
   fundo?: Fundo
+  /** De onde veio o instrumental, quando é uma versão pronta. */
+  versao_pronta?: VersaoPronta
+  aviso?: string
   faixas: Faixa[]
+}
+
+export interface VersaoPronta {
+  id_video: string
+  titulo: string
+  canal: string
+  semelhanca: number
+  /** % de velocidade corrigida (positivo = o upload estava acelerado). */
+  velocidade_corrigida: number
 }
 
 export interface VersaoLetra {

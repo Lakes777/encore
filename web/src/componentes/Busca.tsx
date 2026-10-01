@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { api, urlDaPrevia } from '../logica/api.ts'
 import { formatarDuracao, formatarEstimativa } from '../logica/formatar.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
+import { nomeDoModo } from '../logica/fila.ts'
 import type { NomeModo, ResultadoBusca, Sistema, Tarefa } from '../logica/tipos.ts'
 import { artistaDoCanal } from '../logica/youtube.ts'
 import { Previa } from './Previa.tsx'
@@ -102,8 +103,9 @@ function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, 
   const [modoEscolhido, setModoEscolhido] = useState<NomeModo | null>(null)
   const [adicionando, setAdicionando] = useState(false)
   const [erro, setErro] = useState('')
-  // Até o /api/sistema responder, não há modo; o backend usa o padrão dele.
-  const modo = modoEscolhido ?? sistema?.modo_padrao
+  // Padrão: a versão pronta (quando acha, leva 1-2 min em vez de vários). Até o
+  // /api/sistema responder, não há modo e o backend usa o padrão dele.
+  const modo = modoEscolhido ?? (sistema?.modos.some((m) => m.nome === 'pronta') ? 'pronta' : sistema?.modo_padrao)
   // Só pela fila: se a tarefa der erro ou for removida, o botão Adicionar volta.
   const estaNaFila = naFila
 
@@ -156,10 +158,19 @@ function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, 
                 disabled={estaNaFila}
               />
               {opcao.descricao}
-              <span className="texto-fraco">{formatarEstimativa(resultado.estimativas[opcao.nome])}</span>
+              <span className="texto-fraco">
+                {/* A versão pronta para de procurar quando acha uma boa: a estimativa é o pior caso */}
+                {opcao.nome === 'pronta' && resultado.estimativas.pronta != null ? 'até ' : ''}
+                {formatarEstimativa(resultado.estimativas[opcao.nome])}
+              </span>
             </label>
           ))}
         </fieldset>
+      )}
+      {modo === 'pronta' && sistema && !estaNaFila && (
+        <p className="texto-fraco">
+          Procura um instrumental pronto no YouTube; se nenhum servir, separa com IA ({nomeDoModo(sistema.modo_reserva, sistema)}).
+        </p>
       )}
       {modo === 'qualidade' && sistema?.dispositivo === 'cpu' && !estaNaFila && (
         <p className="aviso">{AVISO_ALTA_NA_CPU}</p>

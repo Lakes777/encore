@@ -74,6 +74,12 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
                     {musica.artista && <p className="musica__artista">{musica.artista}</p>}
                     <p className="texto-fraco">
                       {descricaoTom(musica)} · {musica.tem_letra ? 'com letra' : 'sem letra'}
+                      {musica.versao_pronta && (
+                        <span title={`Instrumental: ${musica.versao_pronta.titulo} (${musica.versao_pronta.canal})`}>
+                          {' '}
+                          · versão pronta
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="musica__acoes">

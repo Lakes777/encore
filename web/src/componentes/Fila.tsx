@@ -68,6 +68,7 @@ export function Fila({ tarefas, sistema, aoRemover }: Props) {
                 <div className="progresso__barra" style={{ width: `${porcento}%` }} />
               </div>
               {tarefa.estado === 'erro' && tarefa.erro && <p className="erro">{tarefa.erro}</p>}
+              {tarefa.aviso && <p className="aviso">{tarefa.aviso}</p>}
             </li>
           )
         })}

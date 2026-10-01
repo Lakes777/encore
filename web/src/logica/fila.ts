@@ -3,6 +3,7 @@ import type { EstadoTarefa, NomeModo, Sistema } from './tipos.ts'
 export const TEXTO_DO_ESTADO: Record<EstadoTarefa, string> = {
   'na fila': 'Na fila',
   baixando: 'Baixando',
+  'procurando versão pronta': 'Procurando versão pronta',
   separando: 'Separando as vozes',
   analisando: 'Descobrindo o tom',
   pronta: 'Pronta',
@@ -11,7 +12,7 @@ export const TEXTO_DO_ESTADO: Record<EstadoTarefa, string> = {
 
 /** Tarefas que ainda vão mudar sozinhas (a tela consulta a fila enquanto houver uma). */
 export function emAndamento(estado: EstadoTarefa) {
-  return estado === 'na fila' || estado === 'baixando' || estado === 'separando' || estado === 'analisando'
+  return estado !== 'pronta' && estado !== 'erro'
 }
 
 /** Só dá para tirar da fila o que não está rodando (o backend responde 409). */
@@ -20,7 +21,7 @@ export function podeRemover(estado: EstadoTarefa) {
 }
 
 // Se o /api/sistema ainda não respondeu, usa os nomes de sempre.
-const NOME_DO_MODO: Record<NomeModo, string> = { rapido: 'Rápida', qualidade: 'Alta' }
+const NOME_DO_MODO: Record<NomeModo, string> = { pronta: 'Versão pronta', rapido: 'Rápida', qualidade: 'Alta' }
 
 /** "Rápida" / "Alta": a descrição que o backend manda, ou o nome de sempre. */
 export function nomeDoModo(modo: NomeModo, sistema: Sistema | null) {

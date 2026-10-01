@@ -17,6 +17,7 @@ const chamadas = vi.mocked(api)
 const SISTEMA: Sistema = {
   dispositivo: 'cpu',
   modo_padrao: 'rapido',
+  modo_reserva: 'rapido',
   modos: [
     { nome: 'rapido', descricao: 'Rápida' },
     { nome: 'qualidade', descricao: 'Alta' },
@@ -32,7 +33,7 @@ function resultado(extra: Partial<ResultadoBusca> = {}): ResultadoBusca {
     miniatura: 'https://i.ytimg.com/vi/2Q_ZzBGPdqE/hq.jpg',
     url: 'https://www.youtube.com/watch?v=2Q_ZzBGPdqE',
     inicio_previa: 46,
-    estimativas: { rapido: 50, qualidade: 1300 },
+    estimativas: { pronta: 180, rapido: 50, qualidade: 1300 },
     ...extra,
   }
 }
@@ -48,6 +49,7 @@ function tarefa(extra: Partial<Tarefa> = {}): Tarefa {
     estado: 'na fila',
     progresso: 0,
     erro: null,
+    aviso: null,
     ...extra,
   }
 }
@@ -135,6 +137,19 @@ describe('busca', () => {
     await usuario.click(within(item).getByRole('button', { name: 'Adicionar' }))
     expect(await screen.findByText('Falhou.')).toBeInTheDocument()
     expect(within(item).getByRole('button', { name: 'Adicionar' })).toBeInTheDocument()
+  })
+
+  it('com a versão pronta disponível, ela vem marcada e explica o que faz', async () => {
+    chamadas.sistema.mockResolvedValue({ ...SISTEMA, modos: [{ nome: 'pronta', descricao: 'Versão pronta' }, ...SISTEMA.modos] })
+    chamadas.buscar.mockResolvedValue([resultado()])
+    chamadas.adicionarNaFila.mockResolvedValue(tarefa({ modo: 'pronta' }))
+    const usuario = await buscar()
+    const item = (await screen.findByRole('heading', { name: 'Help! (Remastered 2009)' })).closest('li')!
+    expect(await within(item).findByRole('radio', { name: /Versão pronta/ })).toBeChecked()
+    expect(within(item).getByText('até ~3 min')).toBeInTheDocument()
+    expect(within(item).getByText(/se nenhum servir, separa com IA \(Rápida\)/)).toBeInTheDocument()
+    await usuario.click(within(item).getByRole('button', { name: 'Adicionar' }))
+    expect(chamadas.adicionarNaFila).toHaveBeenCalledWith(expect.objectContaining({ modo: 'pronta' }))
   })
 
   it('não avisa sobre o modo Alta quando tem placa de vídeo', async () => {
@@ -231,6 +246,17 @@ describe('fila', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '60')
   })
 
+  it('mostra a procura da versão pronta e o aviso quando caiu na separação', async () => {
+    chamadas.fila.mockResolvedValue([
+      tarefa({ id: 't1', modo: 'pronta', estado: 'procurando versão pronta', progresso: 0.2 }),
+      tarefa({ id: 't2', titulo: 'Yellow', estado: 'separando', progresso: 0.6, aviso: 'Nenhuma versão pronta serviu; separada com IA (modo Rápida).' }),
+    ])
+    render(<TelaInicio />)
+    expect(await screen.findByText('Procurando versão pronta')).toBeInTheDocument()
+    expect(screen.getByText(/20% · Versão pronta/)).toBeInTheDocument()
+    expect(screen.getByText('Nenhuma versão pronta serviu; separada com IA (modo Rápida).')).toBeInTheDocument()
+  })
+
   it('tira da fila e mostra o erro da tarefa', async () => {
     chamadas.fila.mockResolvedValueOnce([
       tarefa({ id: 't1', estado: 'erro', erro: 'Vídeo indisponível.' }),
@@ -275,6 +301,16 @@ describe('minhas músicas', () => {
     expect(await screen.findByRole('link', { name: 'Help!' })).toHaveAttribute('href', '#/musica/abcdef123456')
     expect(screen.getByText('A maior · com letra')).toBeInTheDocument()
     expect(screen.getByText('tom desconhecido · sem letra')).toBeInTheDocument()
+  })
+
+  it('marca as músicas com versão pronta', async () => {
+    chamadas.musicas.mockResolvedValue([
+      musica({
+        versao_pronta: { id_video: '7-4qKAseIXQ', titulo: 'Help! (Instrumental)', canal: 'Canal', semelhanca: 0.97, velocidade_corrigida: 0 },
+      }),
+    ])
+    render(<TelaInicio />)
+    expect(await screen.findByTitle('Instrumental: Help! (Instrumental) (Canal)')).toHaveTextContent('versão pronta')
   })
 
   it('explica o que fazer quando não há músicas', async () => {

@@ -98,6 +98,7 @@ karaoke/
   letras.py      # LRCLIB, limpeza do título do YouTube e leitura do formato .lrc
   capas.py       # Capas do iTunes
   previa.py      # Repassa o áudio do YouTube para a prévia da busca
+  versoes.py     # Versões prontas: procura, compara pelo cromagrama e alinha
   internet.py    # Pedidos às APIs públicas
   api.py         # Rotas da API (FastAPI)
   __main__.py    # python -m karaoke
@@ -139,6 +140,21 @@ web/                 # Site em React + TypeScript (Vite)
   e as outras são puxadas de volta quando se afastam mais de 80 ms dela (menos as que ainda estão
   carregando um trecho, para não cancelar a busca). No futuro isso também permite mudar a
   velocidade sem mudar o tom (`playbackRate` + `preservesPitch`).
+- **Versão pronta conferida pelo cromagrama.** Procurar "instrumental" no YouTube acha de tudo:
+  a mesma gravação sem voz, regravações, uploads acelerados para fugir do Content ID, outras
+  edições, versões em outro tom e até o clipe com voz. Em 5 pontos da música, uma janela de 40 s
+  da original é encaixada no candidato; os atrasos viram uma reta. Deitada: mesmo andamento.
+  Inclinada com semelhança ≥ 0,95: a mesma gravação acelerada, que é reamostrada (velocidade e tom
+  voltam juntos). Pontos fora da reta ou semelhança baixa: recusado. O título precisa dizer que
+  não tem voz, porque o cromagrama compara notas e o clipe oficial bate quase 100%.
+
+  | Música | Escolhida | Tempo no notebook | Diferença depois de alinhar |
+  |---|---|---|---|
+  | Help! | karaokê "from the Original Music" | 95 s | 0,10 s |
+  | Yellow | official instrumental, 1,5% acelerado | 48 s | 0,05 s |
+  | Bat Country | instrumental do A7XTV | 54 s | 0,01 s |
+
+  Separar com IA levaria de 9 a 25 min cada uma na mesma CPU.
 - **Prévia sem o player do YouTube.** O player embutido recusa muitas músicas de gravadora quando
   o site é local. Então a prévia toca num `<audio>` do próprio site: nas músicas já baixadas, o
   áudio original; nos resultados da busca, o yt-dlp acha o endereço do áudio e o servidor repassa
@@ -160,8 +176,8 @@ Fase 1: karaokê
 - [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 
 Fase 2: versões prontas
-- [ ] Procurar primeiro a versão instrumental/karaokê oficial; separar com IA só se não houver
-- [ ] Conferir a duração da versão pronta para a letra não sair do tempo
+- [x] Procurar primeiro um instrumental ou karaokê pronto no YouTube; separar com IA só se nenhum servir
+- [x] Comparar cada candidato com a original pelo cromagrama e alinhar (começo e velocidade) para a letra não sair do tempo
 
 Fase 3: modo guitarra
 - [ ] Backing track sem guitarra (pronta ou separada com IA) para tocar por cima
