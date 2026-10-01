@@ -1,0 +1,264 @@
+/* Tela da música: funcional e limpa por enquanto (o visual vem depois).
+   Letra no meio, painel de volumes ao lado (embaixo no celular), player no rodapé. */
+
+.tela-musica {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Imagem de fundo desfocada; o scale esconde a borda clara que o blur deixa. */
+.tela-musica__fundo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.1);
+}
+
+/* Véu escuro para a letra ficar legível em cima de qualquer imagem. */
+.tela-musica__veu {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgb(13 14 16 / 0.7);
+}
+
+.tela-musica__topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.tela-musica__nome {
+  flex: 1;
+  min-width: 0;
+}
+
+.tela-musica__nome h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tela-musica__nome p {
+  margin: 0;
+}
+
+.tela-musica__subtitulo {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tela-musica__corpo {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 0 16px;
+  min-height: 0;
+}
+
+@media (min-width: 900px) {
+  .tela-musica__corpo {
+    grid-template-columns: 1fr 300px;
+  }
+}
+
+.tela-musica__letra {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tela-musica__sem-letra {
+  margin: auto;
+  text-align: center;
+}
+
+.tela-musica__painel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-self: start;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgb(22 23 26 / 0.85);
+}
+
+/* ---------- letra ---------- */
+
+.letra {
+  position: relative;
+  height: 50vh;
+  height: 50dvh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  text-align: center;
+}
+
+@media (min-width: 900px) {
+  .letra {
+    height: calc(100dvh - 220px);
+  }
+}
+
+.letra__lista {
+  list-style: none;
+  margin: 0;
+  /* Espaço em cima e embaixo para o primeiro e o último verso chegarem ao centro. */
+  padding: 25vh 0;
+}
+
+.letra__verso {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-pequeno);
+  background: none;
+  color: var(--text-muted);
+  opacity: 0.45;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1.4;
+  text-align: center;
+  transition: opacity 0.25s var(--ease-out), color 0.25s var(--ease-out);
+}
+
+button.letra__verso {
+  cursor: pointer;
+}
+
+button.letra__verso:hover {
+  opacity: 0.9;
+}
+
+.letra__verso--perto {
+  opacity: 0.75;
+}
+
+.letra__verso--atual {
+  color: var(--destaque);
+  opacity: 1;
+  font-weight: 700;
+}
+
+.letra--parada {
+  text-align: left;
+}
+
+.letra--parada .letra__linha {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+@media (min-width: 900px) {
+  .letra__verso {
+    font-size: 1.75rem;
+  }
+}
+
+/* ---------- volumes ---------- */
+
+.volumes__lista {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.volumes__faixa {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.volumes__rotulo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.volumes__nome {
+  font-size: 0.875rem;
+}
+
+.volumes__rotulo input,
+.desfoque__rotulo input {
+  width: 100%;
+}
+
+.volumes__porcento {
+  width: 3.5em;
+  text-align: right;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.volumes p {
+  margin: 8px 0 0;
+}
+
+.desfoque__rotulo {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.875rem;
+}
+
+/* ---------- player ---------- */
+
+.tela-musica__controles {
+  padding: 12px 16px 16px;
+}
+
+.tela-musica__tempo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+}
+
+.tela-musica__tempo input {
+  flex: 1;
+  min-width: 0;
+}
+
+.tela-musica__botoes {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.tela-musica__play {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.tela-musica__aviso {
+  min-height: 1.5em;
+  margin: 4px 0 0;
+  text-align: center;
+}
