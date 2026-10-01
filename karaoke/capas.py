@@ -1,7 +1,7 @@
 """Capas de álbum pela iTunes Search API (gratuita, sem chave)."""
 
 from karaoke.internet import pedir_json
-from karaoke.letras import limpar_titulo
+from karaoke.letras import leituras
 
 URL_BUSCA = "https://itunes.apple.com/search"
 TAMANHO = 1200  # pixels: a capa vira fundo de tela cheia
@@ -9,11 +9,14 @@ TAMANHO = 1200  # pixels: a capa vira fundo de tela cheia
 
 def buscar_capas(titulo, artista="", limite=8, pedir=pedir_json):
     """Lista de capas [{"album", "artista", "url"}], sem repetir a mesma imagem."""
-    titulo, artista = limpar_titulo(titulo, artista)
-    termo = f"{artista} {titulo}".strip()
-    if not termo:
+    opcoes = leituras(titulo, artista)
+    if not opcoes:
         raise ValueError("A música precisa de um título para procurar a capa.")
-    resposta = pedir(URL_BUSCA, {"term": termo, "entity": "song", "limit": limite}) or {}
+    resposta = {}
+    for titulo, artista in opcoes:  # tenta cada jeito de ler o título até achar
+        resposta = pedir(URL_BUSCA, {"term": f"{artista} {titulo}".strip(), "entity": "song", "limit": limite}) or {}
+        if resposta.get("results"):
+            break
 
     capas, vistas = [], set()
     for item in resposta.get("results", []):

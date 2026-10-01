@@ -5,7 +5,7 @@ from karaoke.api import criar_app
 from karaoke.biblioteca import Biblioteca
 from karaoke.capas import buscar_capas
 from karaoke.fila import Fila
-from karaoke.letras import baixar_letra, buscar_versoes, ler_lrc, limpar_titulo
+from karaoke.letras import baixar_letra, buscar_versoes, leituras, ler_lrc, limpar_titulo
 from tests.test_api import ID_MUSICA, musica_salva
 
 LRC_HELP = "[ar: The Beatles]\n[00:01.08] Help!\n[00:02.13] I need somebody\n"
@@ -49,6 +49,40 @@ class InternetFalsa:
 ])
 def test_limpa_o_titulo_do_youtube(titulo, artista, esperado):
     assert limpar_titulo(titulo, artista) == esperado
+
+
+def test_leituras_quando_o_canal_nao_e_o_artista():
+    assert leituras("Coldplay - Yellow - Remastered", "Brian Martens Music") == [
+        ("Coldplay - Yellow", "Brian Martens Music"), ("Yellow", "Coldplay"), ("Coldplay", "Yellow")]
+    # canal = artista: uma leitura só
+    assert leituras("The Beatles - Help! (Remastered 2015)", "The Beatles") == [("Help!", "The Beatles")]
+
+
+def test_letra_tenta_a_proxima_leitura_ate_achar():
+    pedidos = []
+
+    def pedir(url, parametros=None):
+        pedidos.append(parametros)
+        achou = parametros == {"track_name": "Yellow", "artist_name": "Coldplay"}
+        return [item_lrclib(7, 269.0)] if achou else []
+
+    versoes = buscar_versoes("Coldplay - Yellow - Remastered", "Brian Martens Music", 269, pedir)
+    assert [v.id for v in versoes] == [7]
+    assert pedidos == [{"track_name": "Coldplay - Yellow", "artist_name": "Brian Martens Music"},
+                       {"track_name": "Yellow", "artist_name": "Coldplay"}]
+
+
+def test_capa_tenta_a_proxima_leitura_ate_achar():
+    termos = []
+
+    def pedir(url, parametros=None):
+        termos.append(parametros["term"])
+        if parametros["term"] != "Coldplay Yellow":
+            return {"results": []}
+        return {"results": [{"collectionName": "Parachutes", "artworkUrl100": "https://capa/100x100bb.jpg"}]}
+
+    assert buscar_capas("Coldplay - Yellow - Remastered", "Brian Martens Music", pedir=pedir)[0]["album"] == "Parachutes"
+    assert termos == ["Brian Martens Music Coldplay - Yellow", "Coldplay Yellow"]
 
 
 def test_nao_confunde_alive_com_live():

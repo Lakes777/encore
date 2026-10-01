@@ -30,7 +30,7 @@ import numpy as np
 from karaoke.busca import buscar as buscar_no_youtube
 from karaoke.download import baixar_audio
 from karaoke.faixas import INSTRUMENTAL, Faixa
-from karaoke.letras import limpar_titulo
+from karaoke.letras import limpar_titulo, sem_enfeites
 
 MODO_PRONTA = "pronta"
 
@@ -202,25 +202,9 @@ def _cromagrama_com_librosa(caminho):
 
 
 # Palavras soltas que atrapalham a busca ("Coldplay - Yellow - Remastered")
-# Palavras de enfeite que sobram soltas NO FIM do título ("Coldplay - Yellow - Remastered",
-# "Yellow - Coldplay HQ Audio"). Só no fim: "Video Killed the Radio Star" e "1999" são nomes.
-_ENFEITE_FINAL = re.compile(
-    r"(\s*[-–|]\s*|\s+)(remaster(ed)?(\s+\d{4})?|official|oficial|music|video|v[ií]deo|audio|[aá]udio|lyrics?|letra"
-    r"|hd|hq|4k)\s*$",
-    re.IGNORECASE,
-)
-
-
-def _sem_enfeites_no_fim(titulo):
-    while (sem := _ENFEITE_FINAL.sub("", titulo)) != titulo:
-        titulo = sem
-    return re.sub(r"(\s*[-–|]\s*)+$", "", titulo).strip()
-
-
 def texto_da_busca(titulo, artista=""):
     """'The Beatles - Help! (Remastered 2009)' -> 'The Beatles Help!'."""
-    titulo, artista = limpar_titulo(titulo, artista)
-    titulo = _sem_enfeites_no_fim(titulo)
+    titulo, artista = limpar_titulo(sem_enfeites(titulo), artista)
     # Se o título ainda tem "X - Y", o canal não era o artista: o título basta
     return titulo if " - " in titulo or not artista else f"{artista} {titulo}"
 

@@ -19,13 +19,48 @@ _ENFEITES = re.compile(
     r"[^\)\]]*[\)\]]",
     re.IGNORECASE,
 )
+# Enfeites soltos NO FIM do título ("Coldplay - Yellow - Remastered", "Yellow - Coldplay HQ
+# Audio"). Só no fim: "Video Killed the Radio Star" e "1999" são nomes de música.
+_ENFEITE_FINAL = re.compile(
+    r"(\s*[-–|]\s*|\s+)(remaster(ed)?(\s+\d{4})?|official|oficial|music|video|v[ií]deo|audio|[aá]udio|lyrics?|letra"
+    r"|hd|hq|4k)\s*$",
+    re.IGNORECASE,
+)
 _TEMPO = re.compile(r"\[(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)\]")
 _OFFSET = re.compile(r"^\[offset:\s*([+-]?\d+)\]", re.IGNORECASE)
 
 
+def sem_enfeites(titulo):
+    """Tira "(Remastered 2009)", "[4K]" e enfeites soltos no fim do título."""
+    titulo = _ENFEITES.sub("", titulo).strip()
+    while (sem := _ENFEITE_FINAL.sub("", titulo)) != titulo:
+        titulo = sem
+    return re.sub(r"(\s*[-–|]\s*)+$", "", titulo).strip()
+
+
+def leituras(titulo, artista=""):
+    """Jeitos possíveis de ler (título, artista) num vídeo do YouTube, do mais provável.
+
+    O canal nem sempre é o artista ("Brian Martens Music" postando "Coldplay - Yellow"), e
+    o " - " nem sempre separa artista de música ("Help! - Live at Shea"). Quem busca tenta
+    na ordem até achar algo.
+    """
+    primeira = limpar_titulo(titulo, artista)
+    opcoes = [primeira]
+    if " - " in primeira[0]:
+        antes, depois = (parte.strip() for parte in primeira[0].split(" - ", 1))
+        opcoes += [(depois, antes), (antes, depois)]  # "Artista - Música" é o mais comum
+    vistas, unicas = set(), []
+    for opcao in opcoes:
+        if opcao[0] and opcao not in vistas:
+            vistas.add(opcao)
+            unicas.append(opcao)
+    return unicas
+
+
 def limpar_titulo(titulo, artista=""):
     """'The Beatles - Help! (Remastered 2015)' -> ('Help!', 'The Beatles')."""
-    titulo = _ENFEITES.sub("", titulo).strip()
+    titulo = sem_enfeites(titulo)
     if " - " in titulo:
         antes, depois = (parte.strip() for parte in titulo.split(" - ", 1))
         # "Artista - Título": se o artista já é conhecido, confere; senão, confia no formato
@@ -78,15 +113,19 @@ def buscar_versoes(titulo, artista="", duracao=None, pedir=pedir_json):
     Ordem: sincronizadas antes das só de texto, e entre elas a de duração mais
     próxima da música (duração diferente = letra fora do tempo).
     """
-    titulo, artista = limpar_titulo(titulo, artista)
-    if not titulo:
+    opcoes = leituras(titulo, artista)
+    if not opcoes:
         raise ValueError("A música precisa de um título para procurar a letra.")
-    parametros = {"track_name": titulo}
-    if artista:
-        parametros["artist_name"] = artista
-    itens = pedir(URL_BUSCA, parametros) or []
-    if not itens and artista:
-        itens = pedir(URL_BUSCA, {"q": f"{artista} {titulo}"}) or []  # busca mais solta
+    itens = []
+    for titulo, artista in opcoes:
+        parametros = {"track_name": titulo} | ({"artist_name": artista} if artista else {})
+        itens = pedir(URL_BUSCA, parametros) or []
+        if itens:
+            break
+    if not itens:
+        # Busca mais solta, com tudo junto (o LRCLIB procura em título, artista e álbum)
+        titulo, artista = opcoes[0]
+        itens = pedir(URL_BUSCA, {"q": f"{artista} {titulo}".strip()}) or []
 
     versoes = [_versao(i) for i in itens if i.get("id") and not i.get("instrumental")]
 
