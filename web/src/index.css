@@ -1,0 +1,179 @@
+/* Fundo cinza-grafite (o mesmo dos outros projetos) com o roxo só nos destaques:
+   botão principal, item ativo, barra de progresso, verso cantado agora.
+   Sem emojis; ícones do lucide-react. */
+:root {
+  color-scheme: dark;
+
+  --bg: #0d0e10;
+  --surface: #16171a;
+  --surface-hover: #1e1f23;
+  --border: #2a2c31;
+  --topo: #121315;
+
+  --text: #e4e5e7;
+  --text-muted: #8e9199;
+
+  /* Roxo cheio só atrás de texto branco; em texto e ícones vai o tom claro. */
+  --roxo: #7c4dcc;
+  --roxo-escuro: #6a3db8;
+  --destaque: #b18cf0;
+  --ok: #81c784;
+  --atencao: #ffd54f;
+  --perigo: #ef9a9a;
+  /* Borda dos campos: precisa de 3:1 sobre o fundo para o campo não sumir. */
+  --borda-campo: #62656d;
+
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --radius: 14px;
+  --radius-pequeno: 10px;
+  /* As mesmas curvas do portfólio */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.5;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Some da tela, mas o leitor de tela continua lendo. */
+.invisivel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+a {
+  color: var(--destaque);
+}
+
+:focus-visible {
+  outline: 2px solid var(--destaque);
+  outline-offset: 2px;
+}
+
+.pagina {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.cartao {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.texto-fraco {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.erro {
+  color: var(--perigo);
+}
+
+/* ---------- botões ---------- */
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pequeno);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s var(--ease-out), border-color 0.15s var(--ease-out);
+}
+
+.botao:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.botao:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.botao--principal {
+  background: var(--roxo);
+  border-color: var(--roxo);
+  color: #fff;
+}
+
+.botao--principal:hover:not(:disabled) {
+  background: var(--roxo-escuro);
+}
+
+/* Só o ícone: o nome vai em aria-label (e title, para aparecer ao passar o mouse). */
+.botao--icone {
+  width: 40px;
+  padding: 0;
+}
+
+.botao--perigo:hover:not(:disabled) {
+  border-color: var(--perigo);
+  color: var(--perigo);
+}
+
+/* ---------- campos ---------- */
+
+.campo {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--borda-campo);
+  border-radius: var(--radius-pequeno);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+input[type='range'] {
+  accent-color: var(--roxo);
+}
+
+/* ---------- progresso ---------- */
+
+.progresso {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.progresso__barra {
+  height: 100%;
+  background: var(--roxo);
+  transition: width 0.4s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

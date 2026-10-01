@@ -29,3 +29,39 @@ jobs:
 
       - name: Rodar os testes
         run: pytest -v
+
+  site:
+    runs-on: ubuntu-latest
+
+    # O site fica em web/: os comandos rodam lá dentro
+    defaults:
+      run:
+        working-directory: web
+
+    # O Vitest 5 pede o Node 22.12 ou mais novo
+    strategy:
+      matrix:
+        node-version: ["22", "24"]
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v5
+
+      - name: Instalar o Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Conferir o código (lint)
+        run: npm run lint
+
+      - name: Rodar os testes
+        run: npm test -- --run
+
+      - name: Conferir que o site compila
+        run: npm run build
