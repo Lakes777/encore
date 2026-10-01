@@ -4,10 +4,12 @@ As rotas que chamam o YouTube são `def` (sem async): o FastAPI as roda numa
 thread à parte, então uma busca lenta não trava as outras rotas.
 """
 
+from pathlib import Path
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from karaoke.biblioteca import DESFOQUE_MAXIMO, DESFOQUE_PADRAO, Biblioteca
@@ -43,7 +45,8 @@ def _estimativas(dispositivo, duracao):
     return {nome: estimar_segundos(nome, dispositivo, duracao) for nome in MODOS}
 
 
-def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=pedir_json):
+def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=pedir_json, pasta_site=None):
+    """Monta o app. `pasta_site` é o site compilado (web/dist), servido em "/" se existir."""
     dispositivo = dispositivo or detectar_dispositivo()
     fila = fila or Fila(pasta_dados)
     biblioteca = Biblioteca(pasta_dados)
@@ -188,5 +191,14 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
             raise HTTPException(404, "Faixa não encontrada.") from None
         # FileResponse aceita pedidos parciais (Range): o player pode pular para qualquer ponto
         return FileResponse(caminho, media_type="audio/wav")
+
+    @app.api_route("/api/{resto:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
+    def rota_inexistente(resto: str):
+        # Sem isto, um /api errado cairia no site abaixo e voltaria a página em vez de 404
+        raise HTTPException(404, "Rota da API não encontrada.")
+
+    if pasta_site and (Path(pasta_site) / "index.html").is_file():
+        # Fica por último: as rotas /api acima têm prioridade
+        app.mount("/", StaticFiles(directory=pasta_site, html=True), name="site")
 
     return app

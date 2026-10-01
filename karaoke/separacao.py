@@ -11,6 +11,9 @@ O audio-separator usa a GPU sozinho quando o PyTorch enxerga CUDA. Aqui só
 detectamos o dispositivo para escolher o modo padrão e estimar o tempo.
 """
 
+import shutil
+import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -53,6 +56,10 @@ _SAIDAS_ETAPA_1 = {"Vocals": "voz", "Instrumental": "instrumental"}
 _SAIDAS_ETAPA_2 = {"Vocals": "voz-principal", "Instrumental": "vocais-de-apoio"}
 _FORMATO = "wav"
 
+# Músicas mais longas que isso são separadas em pedaços e coladas no fim.
+# Inteira, uma música de 4 min passa dos ~3,8 GB de RAM do WSL no notebook.
+PEDACO_SEGUNDOS = 60
+
 
 def detectar_dispositivo():
     """'cuda' se o PyTorch enxerga uma placa NVIDIA, senão 'cpu'."""
@@ -86,7 +93,27 @@ def estimar_segundos(nome_modo, dispositivo, duracao):
 def _criar_separador(pasta_saida, pasta_modelos):
     from audio_separator.separator import Separator
 
-    return Separator(output_dir=str(pasta_saida), model_file_dir=str(pasta_modelos), output_format=_FORMATO.upper())
+    return Separator(output_dir=str(pasta_saida), model_file_dir=str(pasta_modelos), output_format=_FORMATO.upper(),
+                     chunk_duration=PEDACO_SEGUNDOS)
+
+
+@contextmanager
+def _temporarios_em(pasta):
+    """Faz o tempfile usar uma subpasta de `pasta` enquanto separa, e apaga no fim.
+
+    O audio-separator grava os pedaços com tempfile.mkdtemp(), que cai no /tmp.
+    No WSL o /tmp fica na RAM (tmpfs) — justamente o que os pedaços querem poupar.
+    O PyTorch também deixa cache lá, por isso a subpasta inteira é apagada.
+    """
+    temporarios = Path(pasta) / "temporarios"
+    temporarios.mkdir(exist_ok=True)
+    anterior = tempfile.tempdir
+    tempfile.tempdir = str(temporarios)
+    try:
+        yield
+    finally:
+        tempfile.tempdir = anterior
+        shutil.rmtree(temporarios, ignore_errors=True)
 
 
 def _etapa(separador, modelo, entrada, saidas, pasta):
@@ -111,10 +138,11 @@ def separar(audio, pasta, nome_modo="rapido", pasta_modelos="modelos", ao_mudar_
     avisar = ao_mudar_etapa or (lambda numero, total: None)
     separador = criar_separador(pasta, Path(pasta_modelos))
 
-    avisar(1, 2)
-    etapa_1 = _etapa(separador, modo.modelo_voz, audio, _SAIDAS_ETAPA_1, pasta)
-    avisar(2, 2)
-    etapa_2 = _etapa(separador, modo.modelo_karaoke, etapa_1["Vocals"], _SAIDAS_ETAPA_2, pasta)
+    with _temporarios_em(pasta):
+        avisar(1, 2)
+        etapa_1 = _etapa(separador, modo.modelo_voz, audio, _SAIDAS_ETAPA_1, pasta)
+        avisar(2, 2)
+        etapa_2 = _etapa(separador, modo.modelo_karaoke, etapa_1["Vocals"], _SAIDAS_ETAPA_2, pasta)
 
     # A voz inteira já virou principal + apoio; não precisa ficar ocupando espaço
     etapa_1["Vocals"].unlink()

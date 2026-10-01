@@ -139,3 +139,22 @@ def test_recusa_pedido_de_outro_site(pasta):
     assert api.get(f"/api/musicas/{ID_MUSICA}").status_code == 200
     # O próprio app (mesma origem) pode
     assert api.delete(f"/api/musicas/{ID_MUSICA}", headers={"Origin": "http://testserver"}).status_code == 204
+
+
+# ---------- site ----------
+
+
+def test_serve_o_site_compilado_sem_esconder_a_api(pasta, tmp_path):
+    site = tmp_path / "dist"
+    site.mkdir()
+    (site / "index.html").write_text("<h1>Karaokê</h1>", encoding="utf-8")
+    app = TestClient(criar_app(pasta, Fila(pasta), dispositivo="cpu", pasta_site=site))
+    assert "Karaokê" in app.get("/").text
+    assert app.get("/api/sistema").status_code == 200
+    assert app.get("/api/nao-existe").status_code == 404
+
+
+def test_sem_site_compilado_so_a_api_responde(pasta, tmp_path):
+    app = TestClient(criar_app(pasta, Fila(pasta), dispositivo="cpu", pasta_site=tmp_path / "nao-existe"))
+    assert app.get("/").status_code == 404
+    assert app.get("/api/sistema").status_code == 200

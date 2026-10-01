@@ -2,14 +2,18 @@
 
 Variáveis opcionais: KARAOKE_DADOS (pasta das músicas, padrão "dados"),
 KARAOKE_MODELOS (pasta dos modelos de IA, padrão "modelos"), PORT.
+O site precisa estar compilado antes (cd web && npm run build); sem ele, só a API funciona.
 """
 
 import os
+from pathlib import Path
 
 import uvicorn
 
 from karaoke.api import criar_app
 from karaoke.fila import Fila
+
+PASTA_SITE = Path(__file__).resolve().parent.parent / "web" / "dist"
 
 
 def main():
@@ -17,7 +21,7 @@ def main():
     fila = Fila(pasta_dados, os.environ.get("KARAOKE_MODELOS", "modelos"))
     fila.iniciar()
     # Só no próprio computador (127.0.0.1): o app não deve ficar aberto na rede
-    uvicorn.run(criar_app(pasta_dados, fila), host="127.0.0.1", port=int(os.environ.get("PORT", "8000")))
+    uvicorn.run(criar_app(pasta_dados, fila, pasta_site=PASTA_SITE), host="127.0.0.1", port=int(os.environ.get("PORT", "8000")))
 
 
 if __name__ == "__main__":

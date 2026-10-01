@@ -1,3 +1,5 @@
+import tempfile
+
 import pytest
 
 from karaoke.download import baixar_audio
@@ -57,6 +59,7 @@ class SeparadorFalso:
 
     def separate(self, entrada, custom_output_names):
         self.chamadas.append((self.modelo, entrada))
+        self.temporarios = tempfile.gettempdir()
         if self.gerar:
             for nome in custom_output_names.values():
                 (self.pasta / f"{nome}.wav").write_bytes(b"audio")
@@ -110,6 +113,21 @@ def test_modo_qualidade_usa_os_roformer(tmp_path):
 def test_avisa_quando_o_modelo_nao_gera_os_arquivos(tmp_path):
     with pytest.raises(RuntimeError, match="não gerou"):
         separar_com_falso(tmp_path, gerar=False)
+
+
+def test_pedacos_temporarios_ficam_na_pasta_da_musica(tmp_path):
+    antes = tempfile.gettempdir()
+    _, separador, _ = separar_com_falso(tmp_path)
+    assert separador.temporarios == str(tmp_path / "temporarios")
+    assert tempfile.gettempdir() == antes
+    assert not (tmp_path / "temporarios").exists()
+
+
+def test_volta_a_pasta_temporaria_mesmo_com_erro(tmp_path):
+    antes = tempfile.gettempdir()
+    with pytest.raises(RuntimeError):
+        separar_com_falso(tmp_path, gerar=False)
+    assert tempfile.gettempdir() == antes
 
 
 def test_recusa_modo_desconhecido():

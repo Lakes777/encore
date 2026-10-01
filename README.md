@@ -36,6 +36,11 @@ Os modelos Roformer separam bem melhor, mas só são viáveis com GPU. Por isso 
 dispositivo (`cpu` ou `cuda`) vão ser configuráveis: modelo leve para desenvolver no notebook
 e Roformer numa placa de vídeo (GTX 1660) para usar de verdade.
 
+Separar a música inteira de uma vez pesa demais: um trecho de 75 s já usa 3,2 GB de RAM. Por isso
+a separação vai em pedaços de 60 s, colados no fim; o pico fica em ~3,1 GB qualquer que seja a
+duração. Os pedaços vão para uma pasta temporária dentro da pasta da música, no disco (no WSL o
+`/tmp` fica na própria RAM).
+
 ## Como rodar
 
 Precisa do Python 3.10+ e do [ffmpeg](https://ffmpeg.org) instalado.
@@ -125,7 +130,7 @@ Fase 1: karaokê
 - [x] Fila com progresso numa thread: baixar, separar e analisar, uma música por vez
 - [x] Letras sincronizadas do LRCLIB (versões com duração parecida primeiro) e capas do iTunes
 - [x] API (FastAPI): busca com estimativa por modo, fila, lista de músicas e faixas com Range
-- [ ] Separar músicas longas em pedaços: 75 s já usam 3,2 GB de RAM no modo Rápida
+- [x] Separar em pedaços de 60 s: o pico de RAM fica em ~3,1 GB qualquer que seja a duração (Help! inteira, 2:19, em 9 min na CPU)
 - [ ] Telas (React): busca com prévia, lista, tela da música (letra sincronizada, volumes, tela cheia, fundo com desfoque)
 
 Fase 2: versões prontas
