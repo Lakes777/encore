@@ -6,7 +6,7 @@ Karaokê que roda no próprio computador: você busca uma música do YouTube, o 
 a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra a
 **letra sincronizada** enquanto a música toca, com um volume para cada faixa.
 
-> **Em desenvolvimento.** Por enquanto existem a base (a música como lista de faixas) e a busca no YouTube.
+> **Em desenvolvimento.** A parte de trás (busca, download, separação, tom e fila) e a API já funcionam; faltam as telas.
 
 > **Atenção:** projeto de estudo, para uso pessoal e local. Baixar áudio do YouTube vai
 > contra os termos de uso da plataforma, por isso o app não é hospedado publicamente.
@@ -36,12 +36,34 @@ Os modelos Roformer separam bem melhor, mas só são viáveis com GPU. Por isso 
 dispositivo (`cpu` ou `cuda`) vão ser configuráveis: modelo leve para desenvolver no notebook
 e Roformer numa placa de vídeo (GTX 1660) para usar de verdade.
 
+## Como rodar
+
+Precisa do Python 3.10+ e do [ffmpeg](https://ffmpeg.org) instalado.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m karaoke          # http://127.0.0.1:8000/docs mostra as rotas
+```
+
+Variáveis opcionais: `KARAOKE_DADOS` (pasta das músicas, padrão `dados`), `KARAOKE_MODELOS`
+(pasta dos modelos de IA, padrão `modelos`; são baixados na primeira separação) e `PORT`.
+
+| Rota | O que faz |
+|---|---|
+| `GET /api/sistema` | Dispositivo (`cpu`/`cuda`), modo padrão e modos disponíveis |
+| `GET /api/busca?q=` | Busca pelo nome ou link; cada resultado traz o início da prévia e o tempo estimado de cada modo |
+| `GET/POST /api/fila`, `DELETE /api/fila/{id}` | Fila de preparo, com estado e progresso |
+| `GET /api/musicas`, `GET/DELETE /api/musicas/{id}` | Músicas prontas |
+| `GET /api/musicas/{id}/faixas/{arquivo}` | Áudio de uma faixa (aceita Range, para pular na música) |
+
 ## Testes
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt   # leve: não instala a IA
 pytest
 ```
 
@@ -55,14 +77,22 @@ karaoke/
   separacao.py   # Separa voz principal, vocais de apoio e instrumental (modos Rápida e Alta)
   analise.py     # Descobre o tom e a escala
   fila.py        # Prepara as músicas em segundo plano e salva cada uma em musica.json
+  biblioteca.py  # Lista, abre e apaga as músicas prontas
+  api.py         # Rotas da API (FastAPI)
+  __main__.py    # python -m karaoke
 tests/
   test_faixas.py
   test_busca.py  # O yt-dlp é trocado por um falso: roda sem internet
   test_download_separacao.py
   test_analise_fila.py
+  test_api.py
 ```
 
 ## Decisões técnicas
+
+- **Só no próprio computador.** O servidor escuta em 127.0.0.1 e recusa pedidos que mudam algo
+  vindos de outro site (cabeçalho Origin), para uma página qualquer aberta no navegador não
+  conseguir apagar músicas.
 
 - **Tom pela parte harmônica.** Antes de comparar as notas com os perfis de cada tom, a bateria é
   retirada (`librosa.effects.harmonic`). Sem isso, o Help! (Lá maior) saía como Dó# menor.
@@ -82,7 +112,8 @@ Fase 1: karaokê
 - [x] Tom e escala (librosa + perfis de Krumhansl, medindo só a parte harmônica)
 - [x] Fila com progresso numa thread: baixar, separar e analisar, uma música por vez
 - [ ] Letras sincronizadas do LRCLIB e capas do iTunes
-- [ ] API (FastAPI) e tela da música (letra sincronizada, volumes, tela cheia, fundo com desfoque)
+- [x] API (FastAPI): busca com estimativa por modo, fila, lista de músicas e faixas com Range
+- [ ] Telas (React): busca com prévia, lista, tela da música (letra sincronizada, volumes, tela cheia, fundo com desfoque)
 
 Fase 2: versões prontas
 - [ ] Procurar primeiro a versão instrumental/karaokê oficial; separar com IA só se não houver

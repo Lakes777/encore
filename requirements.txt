@@ -1,3 +1,6 @@
+# O app completo. O PyTorch e a separação com IA vêm com o audio-separator.
 yt-dlp
 audio-separator
 librosa
+fastapi
+uvicorn
