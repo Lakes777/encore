@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { ExternalLink, X } from 'lucide-react'
 import { urlDaPrevia } from '../logica/youtube.ts'
 
 interface Props {
@@ -19,10 +19,17 @@ export function Previa({ idVideo, inicio, titulo, aoFechar }: Props) {
         allow="autoplay; encrypted-media"
         referrerPolicy="strict-origin-when-cross-origin"
       />
-      <button type="button" className="botao" onClick={aoFechar}>
-        <X size={16} aria-hidden />
-        Fechar a prévia
-      </button>
+      <div className="previa__acoes">
+        <button type="button" className="botao" onClick={aoFechar}>
+          <X size={16} aria-hidden />
+          Fechar a prévia
+        </button>
+        {/* Gravadoras costumam bloquear o player embutido em sites locais: aí só no YouTube */}
+        <a className="botao" href={`https://www.youtube.com/watch?v=${encodeURIComponent(idVideo)}&t=${Math.floor(inicio)}s`} target="_blank" rel="noreferrer">
+          <ExternalLink size={16} aria-hidden />
+          Abrir no YouTube
+        </a>
+      </div>
     </div>
   )
 }

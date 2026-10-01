@@ -264,6 +264,17 @@ describe('minhas músicas', () => {
     )
   })
 
+  it('música baixada toca a prévia do próprio arquivo original', async () => {
+    chamadas.musicas.mockResolvedValue([
+      musica({ duracao: 150, faixas: [{ nome: 'original', arquivo: 'original.wav', volume: 0 }] }),
+    ])
+    const usuario = userEvent.setup()
+    render(<TelaInicio />)
+    await usuario.click(await screen.findByRole('button', { name: 'Ouvir a prévia de Help!' }))
+    expect(screen.getByLabelText('Prévia de Help!')).toHaveAttribute('src', expect.stringMatching(/\/faixas\/original\.wav$/))
+    expect(screen.queryByTitle('Prévia de Help!')).not.toBeInTheDocument()
+  })
+
   it('apaga depois de confirmar', async () => {
     chamadas.musicas.mockResolvedValue([musica()])
     chamadas.apagarMusica.mockResolvedValue(undefined)

@@ -124,6 +124,21 @@
   margin-top: 12px;
 }
 
+.previa__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.previa__acoes a {
+  text-decoration: none;
+}
+
+.previa audio {
+  width: 100%;
+  max-width: 480px;
+}
+
 .previa__video {
   width: 100%;
   max-width: 480px;
