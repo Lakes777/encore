@@ -57,6 +57,10 @@ Variáveis opcionais: `KARAOKE_DADOS` (pasta das músicas, padrão `dados`), `KA
 | `GET/POST /api/fila`, `DELETE /api/fila/{id}` | Fila de preparo, com estado e progresso |
 | `GET /api/musicas`, `GET/DELETE /api/musicas/{id}` | Músicas prontas |
 | `GET /api/musicas/{id}/faixas/{arquivo}` | Áudio de uma faixa (aceita Range, para pular na música) |
+| `GET /api/musicas/{id}/letras` | Versões da letra no LRCLIB, sincronizadas e de duração parecida primeiro |
+| `GET/PUT/DELETE /api/musicas/{id}/letra` | Letra escolhida, já em versos com o tempo em segundos |
+| `GET /api/musicas/{id}/capas` | Capas do álbum (iTunes) para usar de fundo |
+| `PUT /api/musicas/{id}/fundo` | Imagem de fundo e desfoque (0 a 40 px) |
 
 ## Testes
 
@@ -78,6 +82,9 @@ karaoke/
   analise.py     # Descobre o tom e a escala
   fila.py        # Prepara as músicas em segundo plano e salva cada uma em musica.json
   biblioteca.py  # Lista, abre e apaga as músicas prontas
+  letras.py      # LRCLIB, limpeza do título do YouTube e leitura do formato .lrc
+  capas.py       # Capas do iTunes
+  internet.py    # Pedidos às APIs públicas
   api.py         # Rotas da API (FastAPI)
   __main__.py    # python -m karaoke
 tests/
@@ -86,9 +93,14 @@ tests/
   test_download_separacao.py
   test_analise_fila.py
   test_api.py
+  test_letras_capas.py
 ```
 
 ## Decisões técnicas
+
+- **Letra com a duração parecida.** O LRCLIB costuma ter várias versões da mesma música (álbum,
+  remaster, ao vivo). As sincronizadas cuja duração mais se aproxima do áudio baixado aparecem
+  primeiro, porque duração diferente quer dizer letra fora do tempo.
 
 - **Só no próprio computador.** O servidor escuta em 127.0.0.1 e recusa pedidos que mudam algo
   vindos de outro site (cabeçalho Origin), para uma página qualquer aberta no navegador não
@@ -111,7 +123,7 @@ Fase 1: karaokê
 - [x] Baixar o áudio (yt-dlp + ffmpeg) e separar em duas etapas, nos modos Rápida e Alta, com estimativa de tempo
 - [x] Tom e escala (librosa + perfis de Krumhansl, medindo só a parte harmônica)
 - [x] Fila com progresso numa thread: baixar, separar e analisar, uma música por vez
-- [ ] Letras sincronizadas do LRCLIB e capas do iTunes
+- [x] Letras sincronizadas do LRCLIB (versões com duração parecida primeiro) e capas do iTunes
 - [x] API (FastAPI): busca com estimativa por modo, fila, lista de músicas e faixas com Range
 - [ ] Telas (React): busca com prévia, lista, tela da música (letra sincronizada, volumes, tela cheia, fundo com desfoque)
 
