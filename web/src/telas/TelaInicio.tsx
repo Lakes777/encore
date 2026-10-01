@@ -76,8 +76,23 @@ export function TelaInicio() {
   const temTarefaAndando = tarefas.some((t) => emAndamento(t.estado))
   useEffect(() => {
     if (!temTarefaAndando) return
-    const intervalo = window.setInterval(() => void carregarFila(), INTERVALO_DA_FILA)
-    return () => window.clearInterval(intervalo)
+    // setTimeout encadeado, e não setInterval: a próxima consulta só sai quando a
+    // anterior volta. Com a CPU ocupada separando, o servidor pode levar mais que o
+    // intervalo para responder, e consultas sobrepostas descartariam umas às outras.
+    let ativo = true
+    let espera = 0
+    const agendar = () => {
+      espera = window.setTimeout(() => {
+        void carregarFila().finally(() => {
+          if (ativo) agendar()
+        })
+      }, INTERVALO_DA_FILA)
+    }
+    agendar()
+    return () => {
+      ativo = false
+      window.clearTimeout(espera)
+    }
   }, [temTarefaAndando, carregarFila])
 
   const videosNaFila = useMemo(() => new Set(tarefas.filter((t) => t.estado !== 'erro').map((t) => t.id_video)), [tarefas])

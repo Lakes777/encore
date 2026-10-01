@@ -130,6 +130,21 @@ def test_volta_a_pasta_temporaria_mesmo_com_erro(tmp_path):
     assert tempfile.gettempdir() == antes
 
 
+def test_separador_de_verdade_separa_em_pedacos(tmp_path, monkeypatch):
+    import sys
+    import types
+
+    from karaoke import separacao
+
+    recebido = {}
+    falso = types.ModuleType("audio_separator.separator")
+    falso.Separator = lambda **opcoes: recebido.update(opcoes)
+    monkeypatch.setitem(sys.modules, "audio_separator", types.ModuleType("audio_separator"))
+    monkeypatch.setitem(sys.modules, "audio_separator.separator", falso)
+    separacao._criar_separador(tmp_path, tmp_path / "modelos")
+    assert recebido["chunk_duration"] == separacao.PEDACO_SEGUNDOS
+
+
 def test_recusa_modo_desconhecido():
     with pytest.raises(ValueError, match="rapido ou qualidade"):
         obter_modo("ultra")

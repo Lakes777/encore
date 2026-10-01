@@ -152,6 +152,7 @@ def test_serve_o_site_compilado_sem_esconder_a_api(pasta, tmp_path):
     assert "Karaokê" in app.get("/").text
     assert app.get("/api/sistema").status_code == 200
     assert app.get("/api/nao-existe").status_code == 404
+    assert app.post("/api/sistema").status_code == 405
 
 
 def test_sem_site_compilado_so_a_api_responde(pasta, tmp_path):

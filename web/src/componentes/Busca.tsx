@@ -62,7 +62,7 @@ export function Busca({ sistema, videosNaFila, aoAdicionar, previaAberta, abrirP
         </button>
       </form>
 
-      {carregando && <p className="texto-fraco" role="status">Buscando...</p>}
+      {carregando && <p className="texto-fraco" role="status">Buscando…</p>}
       {erro && (
         <p className="erro" role="alert">
           {erro}
@@ -101,11 +101,11 @@ interface PropsItem {
 function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, abrirPrevia }: PropsItem) {
   const [modoEscolhido, setModoEscolhido] = useState<NomeModo | null>(null)
   const [adicionando, setAdicionando] = useState(false)
-  const [adicionado, setAdicionado] = useState(false)
   const [erro, setErro] = useState('')
   // Até o /api/sistema responder, não há modo; o backend usa o padrão dele.
   const modo = modoEscolhido ?? sistema?.modo_padrao
-  const estaNaFila = naFila || adicionado
+  // Só pela fila: se a tarefa der erro ou for removida, o botão Adicionar volta.
+  const estaNaFila = naFila
 
   async function adicionar() {
     setAdicionando(true)
@@ -118,7 +118,6 @@ function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, 
         modo,
         duracao: resultado.duracao,
       })
-      setAdicionado(true)
       aoAdicionar(tarefa)
     } catch (falha) {
       setErro(mensagemDoErro(falha))
@@ -179,7 +178,7 @@ function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, 
         ) : (
           <button type="button" className="botao botao--principal" onClick={adicionar} disabled={adicionando}>
             <Plus size={16} aria-hidden />
-            {adicionando ? 'Adicionando...' : 'Adicionar'}
+            {adicionando ? 'Adicionando…' : 'Adicionar'}
           </button>
         )}
       </div>

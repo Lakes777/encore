@@ -55,7 +55,7 @@ export function ControleDesfoque({ idMusica, url, desfoque, aoMudar }: Props) {
       <span className="texto-fraco" role="status">
         {estado === 'salvando' ? 'Salvando…' : estado === 'salvo' ? 'Salvo' : ''}
       </span>
-      {erro && <p className="erro">{erro}</p>}
+      {erro && <p className="erro" role="alert">{erro}</p>}
     </div>
   )
 }

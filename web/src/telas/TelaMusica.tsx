@@ -6,6 +6,7 @@ import { Volumes } from '../componentes/Volumes.tsx'
 import { api, ErroApi, urlDaFaixa } from '../logica/api.ts'
 import { descricaoTom, formatarDuracao } from '../logica/formatar.ts'
 import { LINK_INICIO } from '../logica/rota.ts'
+import { mensagemDoErro } from '../logica/mensagem.ts'
 import { DESFOQUE_PADRAO, type Musica, type Verso } from '../logica/tipos.ts'
 import { usePlayer } from '../logica/usePlayer.ts'
 import { estadoInicialDosVolumes, volumeEfetivo } from '../logica/volumes.ts'
@@ -30,7 +31,7 @@ export function TelaMusica({ id }: { id: string }) {
       // 404 = a música ainda não tem letra; outro erro não impede de tocar.
       (motivo: unknown) => ({
         versos: null,
-        erroLetra: motivo instanceof ErroApi && motivo.status === 404 ? null : mensagemDe(motivo),
+        erroLetra: motivo instanceof ErroApi && motivo.status === 404 ? null : mensagemDoErro(motivo),
       }),
     )
     Promise.all([api.musica(id), letra]).then(
@@ -38,7 +39,7 @@ export function TelaMusica({ id }: { id: string }) {
         if (valendo) setCarregamento({ estado: 'pronta', musica, versos, erroLetra })
       },
       (motivo: unknown) => {
-        if (valendo) setCarregamento({ estado: 'erro', mensagem: mensagemDe(motivo) })
+        if (valendo) setCarregamento({ estado: 'erro', mensagem: mensagemDoErro(motivo) })
       },
     )
     return () => {
@@ -68,10 +69,6 @@ export function TelaMusica({ id }: { id: string }) {
   }
 
   return <Player musica={carregamento.musica} versos={carregamento.versos} erroLetra={carregamento.erroLetra} />
-}
-
-function mensagemDe(motivo: unknown) {
-  return motivo instanceof ErroApi ? motivo.message : 'Algo deu errado ao carregar a música.'
 }
 
 /** Foco num campo (ou botão): a barra de espaço é dele, não do play. */

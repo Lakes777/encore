@@ -104,6 +104,9 @@ def _temporarios_em(pasta):
     O audio-separator grava os pedaços com tempfile.mkdtemp(), que cai no /tmp.
     No WSL o /tmp fica na RAM (tmpfs) — justamente o que os pedaços querem poupar.
     O PyTorch também deixa cache lá, por isso a subpasta inteira é apagada.
+    Cuidado: tempfile.tempdir vale para o processo inteiro. Funciona porque a fila
+    separa uma música por vez e nenhuma rota da API usa tempfile; se isso mudar,
+    trocar por outra forma de escolher a pasta dos pedaços.
     """
     temporarios = Path(pasta) / "temporarios"
     temporarios.mkdir(exist_ok=True)

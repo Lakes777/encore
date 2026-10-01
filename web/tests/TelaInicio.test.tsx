@@ -126,6 +126,17 @@ describe('busca', () => {
     expect(chamadas.fila).toHaveBeenCalledTimes(2)
   })
 
+  it('o botão Adicionar volta quando a tarefa dá erro', async () => {
+    chamadas.buscar.mockResolvedValue([resultado()])
+    chamadas.adicionarNaFila.mockResolvedValue(tarefa())
+    chamadas.fila.mockResolvedValueOnce([]).mockResolvedValue([tarefa({ estado: 'erro', erro: 'Falhou.' })])
+    const usuario = await buscar()
+    const item = (await screen.findByRole('heading', { name: 'Help! (Remastered 2009)' })).closest('li')!
+    await usuario.click(within(item).getByRole('button', { name: 'Adicionar' }))
+    expect(await screen.findByText('Falhou.')).toBeInTheDocument()
+    expect(within(item).getByRole('button', { name: 'Adicionar' })).toBeInTheDocument()
+  })
+
   it('não avisa sobre o modo Alta quando tem placa de vídeo', async () => {
     chamadas.sistema.mockResolvedValue({ ...SISTEMA, dispositivo: 'cuda', modo_padrao: 'qualidade' })
     chamadas.buscar.mockResolvedValue([resultado()])
@@ -200,6 +211,22 @@ describe('fila', () => {
     unmount()
     await esperar(6000)
     expect(chamadas.fila).toHaveBeenCalledTimes(2)
+  })
+
+  it('com o servidor lento, espera a resposta antes de consultar de novo', async () => {
+    vi.useFakeTimers()
+    const lenta = (lista: Tarefa[]) => new Promise<Tarefa[]>((pronto) => setTimeout(() => pronto(lista), 2000))
+    chamadas.fila
+      .mockResolvedValueOnce([tarefa({ estado: 'separando', progresso: 0.1 })])
+      .mockImplementationOnce(() => lenta([tarefa({ estado: 'separando', progresso: 0.6 })]))
+      .mockImplementation(() => lenta([tarefa({ estado: 'separando', progresso: 0.7 })]))
+    render(<TelaInicio />)
+    await esperar()
+    await esperar(1500) // sai a 2ª consulta, que leva 2 s
+    await esperar(1500)
+    expect(chamadas.fila).toHaveBeenCalledTimes(2) // nada sobreposto
+    await esperar(500)
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '60')
   })
 
   it('tira da fila e mostra o erro da tarefa', async () => {
@@ -333,6 +360,18 @@ describe('escolher a letra', () => {
     await usuario.click(within(dialogo).getByRole('button', { name: 'Tirar a letra' }))
     expect(chamadas.apagarLetra).toHaveBeenCalledWith('abcdef123456')
     await waitFor(() => expect(chamadas.musicas).toHaveBeenCalledTimes(2))
+  })
+
+  it('o Tab não sai do diálogo', async () => {
+    chamadas.versoesDaLetra.mockResolvedValue([])
+    const { usuario, dialogo } = await abrir(musica({ tem_letra: false, letra_id: undefined }))
+    await within(dialogo).findByText('Nenhuma letra encontrada no LRCLIB.')
+    for (let vez = 0; vez < 6; vez++) {
+      await usuario.tab()
+      expect(dialogo).toContainElement(document.activeElement as HTMLElement)
+    }
+    await usuario.tab({ shift: true })
+    expect(dialogo).toContainElement(document.activeElement as HTMLElement)
   })
 
   it('avisa quando o LRCLIB não tem nada e fecha com Esc', async () => {

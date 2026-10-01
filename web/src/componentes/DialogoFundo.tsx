@@ -59,7 +59,7 @@ export function DialogoFundo({ musica, aoFechar, aoMudar }: Props) {
             Procurando capas...
           </p>
         )}
-        {erroCapas && <p className="erro">{erroCapas}</p>}
+        {erroCapas && <p className="erro" role="alert">{erroCapas}</p>}
         {capas && capas.length === 0 && <p className="texto-fraco">Nenhuma capa encontrada no iTunes.</p>}
         {capas && capas.length > 0 && (
           <div className="fundo__capas" role="group" aria-label="Capas">
@@ -135,7 +135,7 @@ export function DialogoFundo({ musica, aoFechar, aoMudar }: Props) {
             Cancelar
           </button>
           <button type="submit" className="botao botao--principal" disabled={salvando}>
-            {salvando ? 'Salvando...' : 'Salvar'}
+            {salvando ? 'Salvando…' : 'Salvar'}
           </button>
         </div>
       </form>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { indiceDoVersoAtual, letraSincronizada } from '../src/logica/letra.ts'
 import { faixasParaCorrigir, indiceDoMestre, TOLERANCIA_SINCRONIA } from '../src/logica/sincronia.ts'
+import { carregado } from '../src/logica/usePlayer.ts'
 import type { Faixa } from '../src/logica/tipos.ts'
 import { estadoInicialDosVolumes, volumeEfetivo } from '../src/logica/volumes.ts'
 
@@ -82,5 +83,16 @@ describe('volumes', () => {
   it('tocar a original liga ela em 100% e silencia as separadas', () => {
     const estado = { ...estadoInicialDosVolumes(faixas), tocandoOriginal: true }
     expect(faixas.map((faixa) => volumeEfetivo(faixa, estado))).toEqual([0, 0, 1])
+  })
+})
+
+describe('faixa carregada', () => {
+  const falso = (seeking: boolean, readyState: number) => ({ seeking, readyState }) as HTMLMediaElement
+
+  it('só corrige a faixa que tem dados e não está buscando um trecho', () => {
+    expect(carregado(falso(false, HTMLMediaElement.HAVE_FUTURE_DATA))).toBe(true)
+    expect(carregado(falso(false, HTMLMediaElement.HAVE_ENOUGH_DATA))).toBe(true)
+    expect(carregado(falso(true, HTMLMediaElement.HAVE_ENOUGH_DATA))).toBe(false)
+    expect(carregado(falso(false, HTMLMediaElement.HAVE_CURRENT_DATA))).toBe(false)
   })
 })

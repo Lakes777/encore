@@ -192,9 +192,10 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
         # FileResponse aceita pedidos parciais (Range): o player pode pular para qualquer ponto
         return FileResponse(caminho, media_type="audio/wav")
 
-    @app.api_route("/api/{resto:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
+    @app.get("/api/{resto:path}", include_in_schema=False)
     def rota_inexistente(resto: str):
-        # Sem isto, um /api errado cairia no site abaixo e voltaria a página em vez de 404
+        # Sem isto, um GET /api errado cairia no site abaixo e voltaria a página em vez
+        # de 404. Só GET: assim um POST numa rota que existe continua dando 405.
         raise HTTPException(404, "Rota da API não encontrada.")
 
     if pasta_site and (Path(pasta_site) / "index.html").is_file():

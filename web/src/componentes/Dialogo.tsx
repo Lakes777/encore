@@ -11,8 +11,31 @@ interface Props {
 /**
  * Janela por cima da tela. Não usa <dialog>.showModal() porque o jsdom dos testes
  * não tem; é uma div com role="dialog" que fecha com Esc, com o botão Fechar ou
- * clicando fora. Ao fechar, o foco volta para o botão que abriu.
+ * clicando fora. O Tab fica preso dentro dela (é modal) e, ao fechar, o foco volta
+ * para o botão que abriu.
  */
+const FOCAVEIS = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), iframe, audio[controls], [tabindex]:not([tabindex="-1"])'
+
+/** Do último elemento o Tab volta ao primeiro, e o Shift+Tab do primeiro vai ao último. */
+function prenderTab(evento: KeyboardEvent, caixa: HTMLElement) {
+  const focaveis = [...caixa.querySelectorAll<HTMLElement>(FOCAVEIS)]
+  if (focaveis.length === 0) {
+    evento.preventDefault()
+    return
+  }
+  const primeiro = focaveis[0]
+  const ultimo = focaveis[focaveis.length - 1]
+  const atual = document.activeElement
+  const fora = !caixa.contains(atual)
+  if (evento.shiftKey && (atual === primeiro || atual === caixa || fora)) {
+    evento.preventDefault()
+    ultimo.focus()
+  } else if (!evento.shiftKey && (atual === ultimo || fora)) {
+    evento.preventDefault()
+    primeiro.focus()
+  }
+}
+
 export function Dialogo({ titulo, aoFechar, children }: Props) {
   const idTitulo = useId()
   const caixa = useRef<HTMLDivElement>(null)
@@ -27,6 +50,7 @@ export function Dialogo({ titulo, aoFechar, children }: Props) {
     caixa.current?.focus()
     const aoTeclar = (evento: KeyboardEvent) => {
       if (evento.key === 'Escape') fechar.current()
+      if (evento.key === 'Tab' && caixa.current) prenderTab(evento, caixa.current)
     }
     document.addEventListener('keydown', aoTeclar)
     return () => {

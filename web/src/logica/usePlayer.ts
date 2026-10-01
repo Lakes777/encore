@@ -14,6 +14,11 @@ import type { Faixa } from './tipos.ts'
  * (a primeira faixa que não é a original) e um laço que puxa as outras de volta
  * quando elas se afastam dele (regra em sincronia.ts).
  */
+/** A faixa tem dados para seguir tocando e não está no meio de uma busca. */
+export function carregado(audio: HTMLMediaElement) {
+  return !audio.seeking && audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
+}
+
 export function usePlayer(faixas: readonly Faixa[], duracaoConhecida: number | null) {
   const audios = useRef<(HTMLAudioElement | null)[]>([])
   const indiceMestre = indiceDoMestre(faixas)
@@ -39,7 +44,11 @@ export function usePlayer(faixas: readonly Faixa[], duracaoConhecida: number | n
       if (relogio) {
         const agora = relogio.currentTime
         setTempo(agora)
-        const tempos = audios.current.map((audio) => audio?.currentTime ?? agora)
+        // Faixa ainda buscando o trecho (depois de um pulo) fica de fora: mexer no
+        // currentTime dela a cada quadro cancelaria a busca e ela ficaria muda.
+        // Se é o mestre que está esperando dados, ninguém é corrigido neste quadro.
+        const tempos = audios.current.map((audio) => (audio && carregado(audio) ? audio.currentTime : agora))
+        if (!carregado(relogio)) tempos.fill(agora)
         for (const indice of faixasParaCorrigir(agora, tempos)) {
           const audio = audios.current[indice]
           if (audio) audio.currentTime = agora
