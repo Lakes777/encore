@@ -53,13 +53,19 @@ karaoke/
   busca.py       # Busca no YouTube (yt-dlp) pelo nome ou pelo link colado
   download.py    # Baixa o áudio do vídeo em WAV
   separacao.py   # Separa voz principal, vocais de apoio e instrumental (modos Rápida e Alta)
+  analise.py     # Descobre o tom e a escala
+  fila.py        # Prepara as músicas em segundo plano e salva cada uma em musica.json
 tests/
   test_faixas.py
   test_busca.py  # O yt-dlp é trocado por um falso: roda sem internet
   test_download_separacao.py
+  test_analise_fila.py
 ```
 
 ## Decisões técnicas
+
+- **Tom pela parte harmônica.** Antes de comparar as notas com os perfis de cada tom, a bateria é
+  retirada (`librosa.effects.harmonic`). Sem isso, o Help! (Lá maior) saía como Dó# menor.
 
 - **Música = lista de faixas genéricas.** Nada de campos fixos "voz" e "instrumental": quando o
   app aprender a separar guitarra, baixo ou bateria, basta acrescentar faixas, sem mudar o player.
@@ -73,7 +79,8 @@ Fase 1: karaokê
 - [x] Base: música como lista de faixas, com volume e tom/escala
 - [x] Busca no YouTube pelo nome ou pelo link, com o ponto de início da prévia (yt-dlp)
 - [x] Baixar o áudio (yt-dlp + ffmpeg) e separar em duas etapas, nos modos Rápida e Alta, com estimativa de tempo
-- [ ] Fila com progresso: baixar, separar e analisar o tom e a escala (librosa)
+- [x] Tom e escala (librosa + perfis de Krumhansl, medindo só a parte harmônica)
+- [x] Fila com progresso numa thread: baixar, separar e analisar, uma música por vez
 - [ ] Letras sincronizadas do LRCLIB e capas do iTunes
 - [ ] API (FastAPI) e tela da música (letra sincronizada, volumes, tela cheia, fundo com desfoque)
 
