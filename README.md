@@ -70,6 +70,7 @@ Variáveis opcionais: `KARAOKE_DADOS` (pasta das músicas, padrão `dados`), `KA
 | `GET/PUT/DELETE /api/musicas/{id}/letra` | Letra escolhida, já em versos com o tempo em segundos |
 | `GET /api/musicas/{id}/capas` | Capas do álbum (iTunes) para usar de fundo |
 | `PUT /api/musicas/{id}/fundo` | Imagem de fundo e desfoque (0 a 40 px) |
+| `PUT /api/musicas/{id}/volumes` | Volume (0 a 1) de cada faixa, pelo arquivo; a tela salva sozinha |
 
 ## Testes
 
@@ -151,7 +152,8 @@ Fase 1: karaokê
 - [x] API (FastAPI): busca com estimativa por modo, fila, lista de músicas e faixas com Range
 - [x] Separar em pedaços de 60 s: o pico de RAM fica em ~3,1 GB qualquer que seja a duração (Help! inteira, 2:19, em 9 min na CPU)
 - [x] Telas (React): busca com prévia e seletor Rápida/Alta, fila, lista, tela da música (letra sincronizada, volumes, tocar a original, tela cheia, fundo com desfoque)
-- [ ] Salvar os volumes de cada música e "refazer em Alta"
+- [x] Salvar os volumes de cada música (a tela salva sozinha, 0,7 s depois da última mudança)
+- [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 
 Fase 2: versões prontas
 - [ ] Procurar primeiro a versão instrumental/karaokê oficial; separar com IA só se não houver

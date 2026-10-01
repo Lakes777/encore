@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { indiceDoVersoAtual, letraSincronizada } from '../src/logica/letra.ts'
 import { faixasParaCorrigir, indiceDoMestre, TOLERANCIA_SINCRONIA } from '../src/logica/sincronia.ts'
 import { carregado } from '../src/logica/usePlayer.ts'
+import { volumesMudados } from '../src/logica/useSalvarVolumes.ts'
 import type { Faixa } from '../src/logica/tipos.ts'
 import { estadoInicialDosVolumes, volumeEfetivo } from '../src/logica/volumes.ts'
 
@@ -94,5 +95,19 @@ describe('faixa carregada', () => {
     expect(carregado(falso(false, HTMLMediaElement.HAVE_ENOUGH_DATA))).toBe(true)
     expect(carregado(falso(true, HTMLMediaElement.HAVE_ENOUGH_DATA))).toBe(false)
     expect(carregado(falso(false, HTMLMediaElement.HAVE_CURRENT_DATA))).toBe(false)
+  })
+})
+
+describe('volumes a salvar', () => {
+  const faixas = [
+    { nome: 'voz principal', arquivo: 'voz.wav', volume: 1 },
+    { nome: 'instrumental', arquivo: 'inst.wav', volume: 1 },
+    { nome: 'original', arquivo: 'original.wav', volume: 0 },
+  ]
+
+  it('só as faixas que mudaram, nunca a original', () => {
+    const salvos = { 'voz.wav': 1, 'inst.wav': 1, 'original.wav': 0 }
+    expect(volumesMudados(faixas, { 'voz.wav': 0.3, 'inst.wav': 1, 'original.wav': 1 }, salvos)).toEqual({ 'voz.wav': 0.3 })
+    expect(volumesMudados(faixas, { ...salvos }, salvos)).toEqual({})
   })
 })

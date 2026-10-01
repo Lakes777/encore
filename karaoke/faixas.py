@@ -20,7 +20,7 @@ ESCALAS = ("maior", "menor")
 NOTAS = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 
 
-def _conferir_volume(volume):
+def conferir_volume(volume):
     """Devolve o volume como float ou dá erro se estiver fora de 0 a 1."""
     if isinstance(volume, bool) or not isinstance(volume, (int, float)):
         raise ValueError(f"Volume precisa ser um número, não {volume!r}.")
@@ -39,7 +39,7 @@ class Faixa:
         self.nome = self.nome.strip()
         if not self.nome:
             raise ValueError("A faixa precisa de um nome.")
-        self.volume = _conferir_volume(self.volume)
+        self.volume = conferir_volume(self.volume)
 
 
 @dataclass
@@ -79,7 +79,7 @@ class Musica:
             raise ValueError(f"A música já tem a faixa {faixa.nome!r}.")
 
     def mudar_volume(self, nome, volume):
-        self.faixa(nome).volume = _conferir_volume(volume)
+        self.faixa(nome).volume = conferir_volume(volume)
 
     def descricao_tom(self):
         """Texto curto que aparece embaixo do nome na lista, ex.: 'A maior'."""

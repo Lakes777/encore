@@ -141,6 +141,31 @@ def test_recusa_pedido_de_outro_site(pasta):
     assert api.delete(f"/api/musicas/{ID_MUSICA}", headers={"Origin": "http://testserver"}).status_code == 204
 
 
+# ---------- volumes ----------
+
+
+def test_salva_o_volume_das_faixas(pasta):
+    musica_salva(pasta)
+    app = cliente(pasta)
+    resposta = app.put(f"/api/musicas/{ID_MUSICA}/volumes", json={"volumes": {"instrumental.wav": 0.25}})
+    assert resposta.status_code == 200
+    assert resposta.json() == [{"nome": "instrumental", "arquivo": "instrumental.wav", "volume": 0.25}]
+    assert app.get(f"/api/musicas/{ID_MUSICA}").json()["faixas"][0]["volume"] == 0.25
+
+
+@pytest.mark.parametrize("volumes", [{"instrumental.wav": 1.5}, {"instrumental.wav": -0.1},
+                                     {"segredo.txt": 0.5}, {"instrumental.wav": 0.5, "nao-existe.wav": 0.5}])
+def test_volume_errado_e_recusado_sem_gravar_nada(pasta, volumes):
+    musica_salva(pasta)
+    app = cliente(pasta)
+    assert app.put(f"/api/musicas/{ID_MUSICA}/volumes", json={"volumes": volumes}).status_code == 422
+    assert app.get(f"/api/musicas/{ID_MUSICA}").json()["faixas"][0]["volume"] == 1.0
+
+
+def test_volumes_de_musica_inexistente_dao_404(pasta):
+    assert cliente(pasta).put(f"/api/musicas/{ID_MUSICA}/volumes", json={"volumes": {}}).status_code == 404
+
+
 # ---------- site ----------
 
 

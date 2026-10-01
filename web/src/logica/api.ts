@@ -1,4 +1,4 @@
-import type { Capa, Fundo, Musica, NomeModo, ResultadoBusca, Sistema, Tarefa, Verso, VersaoLetra } from './tipos.ts'
+import type { Capa, Faixa, Fundo, Musica, NomeModo, ResultadoBusca, Sistema, Tarefa, Verso, VersaoLetra } from './tipos.ts'
 
 /** Erro com a mensagem que a API mandou em "detail" (já em português). */
 export class ErroApi extends Error {
@@ -61,6 +61,10 @@ export const api = {
     pedir<Verso[]>(`${daMusica(id)}/letra`, { method: 'PUT', body: json({ id_lrclib: idLrclib }) }),
   letra: (id: string) => pedir<Verso[]>(`${daMusica(id)}/letra`),
   apagarLetra: (id: string) => pedir<void>(`${daMusica(id)}/letra`, { method: 'DELETE' }),
+
+  /** Volumes de 0 a 1 por arquivo da faixa (só as que mudaram); devolve todas as faixas. */
+  definirVolumes: (id: string, volumes: Record<string, number>) =>
+    pedir<Faixa[]>(`${daMusica(id)}/volumes`, { method: 'PUT', body: json({ volumes }) }),
 
   capas: (id: string) => pedir<Capa[]>(`${daMusica(id)}/capas`),
   definirFundo: (id: string, fundo: Fundo) => pedir<Fundo>(`${daMusica(id)}/fundo`, { method: 'PUT', body: json(fundo) }),

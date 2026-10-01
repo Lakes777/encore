@@ -5,6 +5,7 @@ import re
 import shutil
 from pathlib import Path
 
+from karaoke.faixas import conferir_volume
 from karaoke.letras import ler_lrc
 
 ARQUIVO_DADOS = "musica.json"
@@ -92,6 +93,25 @@ class Biblioteca:
         for campo in ("letra_sincronizada", "letra_id"):
             dados.pop(campo, None)
         self._gravar(id_musica, dados)
+
+    # ---------- volumes ----------
+
+    def definir_volumes(self, id_musica, volumes):
+        """Guarda o volume (0 a 1) de algumas faixas, pelo arquivo, e devolve todas as faixas.
+
+        Confere tudo antes de gravar: um volume errado não deixa os outros pela metade.
+        """
+        dados = self.obter(id_musica)
+        por_arquivo = {faixa["arquivo"]: faixa for faixa in dados["faixas"]}
+        novos = {}
+        for arquivo, volume in volumes.items():
+            if arquivo not in por_arquivo:
+                raise ValueError(f"A música não tem a faixa {arquivo!r}.")
+            novos[arquivo] = conferir_volume(volume)
+        for arquivo, volume in novos.items():
+            por_arquivo[arquivo]["volume"] = volume
+        self._gravar(id_musica, dados)
+        return dados["faixas"]
 
     # ---------- fundo ----------
 

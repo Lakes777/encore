@@ -9,6 +9,7 @@ import { LINK_INICIO } from '../logica/rota.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import { DESFOQUE_PADRAO, type Musica, type Verso } from '../logica/tipos.ts'
 import { usePlayer } from '../logica/usePlayer.ts'
+import { useSalvarVolumes } from '../logica/useSalvarVolumes.ts'
 import { estadoInicialDosVolumes, volumeEfetivo } from '../logica/volumes.ts'
 import './TelaMusica.css'
 
@@ -81,6 +82,7 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
   const { faixas } = musica
   const player = usePlayer(faixas, musica.duracao)
   const [volumes, setVolumes] = useState(() => estadoInicialDosVolumes(faixas))
+  const salvamento = useSalvarVolumes(musica.id, faixas, volumes.volumes)
   const [desfoque, setDesfoque] = useState(() => musica.fundo?.desfoque ?? DESFOQUE_PADRAO)
   const conteiner = useRef<HTMLDivElement>(null)
   const [telaCheia, setTelaCheia] = useState(false)
@@ -171,6 +173,14 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
 
         <aside className="tela-musica__painel">
           <Volumes faixas={faixas} estado={volumes} aoMudar={setVolumes} />
+          <p className="texto-fraco" role="status">
+            {salvamento.estado === 'salvando' ? 'Salvando os volumes…' : salvamento.estado === 'salvo' ? 'Volumes salvos' : ''}
+          </p>
+          {salvamento.erro && (
+            <p className="erro" role="alert">
+              {salvamento.erro}
+            </p>
+          )}
           {urlFundo && (
             <ControleDesfoque idMusica={musica.id} url={urlFundo} desfoque={desfoque} aoMudar={setDesfoque} />
           )}

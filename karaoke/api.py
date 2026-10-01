@@ -33,6 +33,11 @@ class PedidoLetra(BaseModel):
     id_lrclib: int = Field(ge=1)
 
 
+class PedidoVolumes(BaseModel):
+    # arquivo da faixa -> volume de 0 a 1 (só as faixas que mudaram)
+    volumes: dict[str, float] = Field(max_length=50)
+
+
 class PedidoFundo(BaseModel):
     url: str | None = Field(default=None, max_length=2000)
     desfoque: int = Field(default=DESFOQUE_PADRAO, ge=0, le=DESFOQUE_MAXIMO)
@@ -174,6 +179,14 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
             raise HTTPException(422, str(erro)) from None
         except Exception:
             raise HTTPException(502, ERRO_INTERNET.format(servico="O iTunes")) from None
+
+    @app.put("/api/musicas/{id_musica}/volumes")
+    def volumes(id_musica: str, pedido: PedidoVolumes):
+        _musica_ou_404(id_musica)
+        try:
+            return biblioteca.definir_volumes(id_musica, pedido.volumes)
+        except ValueError as erro:
+            raise HTTPException(422, str(erro)) from None
 
     @app.put("/api/musicas/{id_musica}/fundo")
     def fundo(id_musica: str, pedido: PedidoFundo):

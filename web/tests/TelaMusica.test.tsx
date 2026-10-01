@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api, ErroApi } from '../src/logica/api.ts'
@@ -10,7 +10,7 @@ vi.mock('../src/logica/api.ts', async (original) => {
   const modulo = await original<typeof import('../src/logica/api.ts')>()
   return {
     ...modulo,
-    api: { musica: vi.fn(), letra: vi.fn(), definirFundo: vi.fn() },
+    api: { musica: vi.fn(), letra: vi.fn(), definirFundo: vi.fn(), definirVolumes: vi.fn() },
   }
 })
 
@@ -76,6 +76,7 @@ async function abrir(musica = umaMusica(), letra: Verso[] | Error = LETRA) {
 beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+  vi.mocked(api.definirVolumes).mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -83,6 +84,8 @@ afterEach(() => {
   vi.mocked(api.musica).mockReset()
   vi.mocked(api.letra).mockReset()
   vi.mocked(api.definirFundo).mockReset()
+  // definirVolumes não é zerado aqui: ao desmontar, a tela ainda salva o que faltava.
+  vi.mocked(api.definirVolumes).mockClear()
 })
 
 describe('carregar', () => {
@@ -180,6 +183,36 @@ describe('volumes', () => {
     expect(screen.getByRole('button', { name: 'Silenciar voz principal' })).toHaveAttribute('aria-pressed', 'true')
     await userEvent.click(screen.getByRole('button', { name: 'Silenciar voz principal' }))
     expect(audio('voz-principal.wav').volume).toBeCloseTo(0.25)
+  })
+
+  it('salva os volumes um pouco depois de parar de mexer, sem o mudo nem a original', async () => {
+    await abrir()
+    const voz = screen.getByRole('slider', { name: 'Volume de voz principal' })
+    fireEvent.change(voz, { target: { value: '40' } })
+    fireEvent.change(voz, { target: { value: '0' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Silenciar instrumental' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Tocar a original' }))
+    expect(api.definirVolumes).not.toHaveBeenCalled()
+
+    expect(await screen.findByText('Volumes salvos', {}, { timeout: 2000 })).toBeInTheDocument()
+    expect(api.definirVolumes).toHaveBeenCalledTimes(1)
+    expect(api.definirVolumes).toHaveBeenCalledWith(ID, { 'voz-principal.wav': 0 })
+  })
+
+  it('sair da tela antes da espera também salva', async () => {
+    vi.mocked(api.musica).mockResolvedValue(umaMusica())
+    vi.mocked(api.letra).mockResolvedValue(LETRA)
+    const { unmount } = render(<TelaMusica id={ID} />)
+    fireEvent.change(await screen.findByRole('slider', { name: 'Volume de vocais de apoio' }), { target: { value: '10' } })
+    unmount()
+    expect(api.definirVolumes).toHaveBeenCalledWith(ID, { 'vocais-de-apoio.wav': 0.1 })
+  })
+
+  it('avisa quando não consegue salvar os volumes', async () => {
+    vi.mocked(api.definirVolumes).mockRejectedValue(new ErroApi(0, 'O servidor do karaokê não respondeu.'))
+    await abrir()
+    fireEvent.change(screen.getByRole('slider', { name: 'Volume de instrumental' }), { target: { value: '50' } })
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Não deu para salvar os volumes'), { timeout: 2000 })
   })
 
   it('tocar a original silencia as separadas e desligar volta como estava', async () => {
