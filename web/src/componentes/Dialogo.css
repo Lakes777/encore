@@ -1,0 +1,36 @@
+.dialogo__fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.6);
+}
+
+.dialogo {
+  width: 100%;
+  max-width: 640px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.dialogo:focus {
+  outline: none;
+}
+
+.dialogo__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dialogo__topo h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
