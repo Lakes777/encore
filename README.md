@@ -51,23 +51,29 @@ pytest
 karaoke/
   faixas.py      # Música como lista de faixas, cada uma com nome, arquivo e volume
   busca.py       # Busca no YouTube (yt-dlp) pelo nome ou pelo link colado
+  download.py    # Baixa o áudio do vídeo em WAV
+  separacao.py   # Separa voz principal, vocais de apoio e instrumental (modos Rápida e Alta)
 tests/
   test_faixas.py
   test_busca.py  # O yt-dlp é trocado por um falso: roda sem internet
+  test_download_separacao.py
 ```
 
 ## Decisões técnicas
 
 - **Música = lista de faixas genéricas.** Nada de campos fixos "voz" e "instrumental": quando o
   app aprender a separar guitarra, baixo ou bateria, basta acrescentar faixas, sem mudar o player.
-- **Separação configurável.** O mesmo código roda na CPU (lento, para testes) ou na GPU (rápido).
+- **Dois modos de separação, escolhidos por música.** "Rápida" (modelos MDX leves) roda até na CPU de um
+  notebook; "Alta" (Roformer) é bem melhor, mas pede placa de vídeo. O app detecta se há GPU NVIDIA para
+  escolher o padrão e mostra o tempo estimado de cada modo, calculado a partir das medições acima.
 
 ## Próximos passos
 
 Fase 1: karaokê
 - [x] Base: música como lista de faixas, com volume e tom/escala
 - [x] Busca no YouTube pelo nome ou pelo link, com o ponto de início da prévia (yt-dlp)
-- [ ] Fila: baixar, separar (audio-separator) e analisar o tom e a escala (librosa), com progresso
+- [x] Baixar o áudio (yt-dlp + ffmpeg) e separar em duas etapas, nos modos Rápida e Alta, com estimativa de tempo
+- [ ] Fila com progresso: baixar, separar e analisar o tom e a escala (librosa)
 - [ ] Letras sincronizadas do LRCLIB e capas do iTunes
 - [ ] API (FastAPI) e tela da música (letra sincronizada, volumes, tela cheia, fundo com desfoque)
 
