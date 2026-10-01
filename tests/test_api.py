@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from karaoke.api import criar_app
 from karaoke.busca import Resultado
 from karaoke.fila import Fila
+from karaoke.versoes import estimar_segundos as estimar_versao
 
 ID_MUSICA = "abcdef123456"
 
@@ -40,14 +41,15 @@ def test_sistema_diz_o_dispositivo_e_o_modo_padrao(pasta):
     assert cliente(pasta, "cpu").get("/api/sistema").json()["modo_padrao"] == "rapido"
     resposta = cliente(pasta, "cuda").get("/api/sistema").json()
     assert resposta["modo_padrao"] == "qualidade"
-    assert [m["descricao"] for m in resposta["modos"]] == ["Rápida", "Alta"]
+    assert [m["descricao"] for m in resposta["modos"]] == ["Versão pronta", "Rápida", "Alta"]
+    assert resposta["modo_reserva"] == "rapido"
 
 
 def test_busca_traz_a_estimativa_de_cada_modo(pasta):
     resultado = cliente(pasta).get("/api/busca", params={"q": "help"}).json()[0]
     assert resultado["id"] == "2Q_ZzBGPdqE"
     assert resultado["inicio_previa"] == 40
-    assert resultado["estimativas"] == {"rapido": 840, "qualidade": 7320}
+    assert resultado["estimativas"] == {"pronta": estimar_versao(120), "rapido": 840, "qualidade": 7320}
 
 
 def test_busca_vazia_e_limite_invalido_dao_422(pasta):
@@ -139,6 +141,13 @@ def test_recusa_pedido_de_outro_site(pasta):
     assert api.get(f"/api/musicas/{ID_MUSICA}").status_code == 200
     # O próprio app (mesma origem) pode
     assert api.delete(f"/api/musicas/{ID_MUSICA}", headers={"Origin": "http://testserver"}).status_code == 204
+
+
+def test_aceita_o_modo_versao_pronta_na_fila(pasta):
+    resposta = cliente(pasta).post("/api/fila", json={"id_video": "2Q_ZzBGPdqE", "titulo": "Help!", "modo": "pronta"})
+    assert resposta.status_code == 201
+    assert resposta.json()["modo"] == "pronta"
+    assert resposta.json()["aviso"] is None
 
 
 # ---------- volumes ----------

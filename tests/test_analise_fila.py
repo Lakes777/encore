@@ -6,6 +6,7 @@ import pytest
 from karaoke.analise import PERFIL_MAIOR, PERFIL_MENOR, analisar_tom, tom_do_cromagrama
 from karaoke.faixas import INSTRUMENTAL, NOTAS, VOCAIS_DE_APOIO, VOZ_PRINCIPAL, Faixa, Musica
 from karaoke.fila import ERRO, NA_FILA, PRONTA, Fila
+from karaoke.versoes import MODO_PRONTA, Comparacao, VersaoPronta
 
 # ---------- tom e escala ----------
 
@@ -174,3 +175,88 @@ def test_thread_em_segundo_plano_prepara_as_musicas(tmp_path):
             break
         threading.Event().wait(0.01)
     assert fila.tarefas()[0].estado == PRONTA
+
+
+# ---------- versão pronta ----------
+
+
+def versao_falsa(achou=True):
+    def preparar(original, pasta, titulo, artista, duracao, id_video, ao_progredir):
+        preparar.pedido = (titulo, artista, duracao, id_video)
+        ao_progredir(0.5)
+        ao_progredir(1.0)
+        if not achou:
+            return None
+        (pasta / "instrumental.wav").write_bytes(b"x")
+        return VersaoPronta(Faixa(INSTRUMENTAL, "instrumental.wav"), "7-4qKAseIXQ", "Yellow (official instrumental)",
+                            "ColdplayInstrumental", Comparacao(0.015, -0.4, 0.97, 0.09))
+    return preparar
+
+
+def test_versao_pronta_vira_o_instrumental_sem_separar(tmp_path):
+    fila = fila_falsa(tmp_path, preparar_versao=versao_falsa(),
+                      separar=lambda *args: pytest.fail("não devia separar com IA"))
+    tarefa = fila.adicionar("yKNxeF4KMsY", "Yellow", "Coldplay", modo=MODO_PRONTA, duracao=269)
+    fila.processar_proxima()
+
+    assert fila.tarefas()[0].estado == PRONTA
+    dados = json.loads((tmp_path / tarefa.id / "musica.json").read_text(encoding="utf-8"))
+    assert dados["modo"] == MODO_PRONTA
+    assert [f["nome"] for f in dados["faixas"]] == [INSTRUMENTAL, "original"]
+    assert dados["versao_pronta"]["id_video"] == "7-4qKAseIXQ"
+    assert dados["versao_pronta"]["velocidade_corrigida"] == 1.5
+    assert "aviso" not in dados
+
+
+def test_sem_versao_pronta_separa_com_o_modo_reserva_e_avisa(tmp_path):
+    modos = []
+
+    def separar(audio, pasta, modo, pasta_modelos, ao_mudar_etapa):
+        modos.append(modo)
+        return separar_falso(audio, pasta, modo, pasta_modelos, ao_mudar_etapa)
+
+    fila = fila_falsa(tmp_path, preparar_versao=versao_falsa(achou=False), separar=separar, modo_reserva="qualidade")
+    tarefa = fila.adicionar("yKNxeF4KMsY", "Yellow", "Coldplay", modo=MODO_PRONTA)
+    fila.processar_proxima()
+
+    pronta = fila.tarefas()[0]
+    assert pronta.estado == PRONTA
+    assert pronta.aviso == "Nenhuma versão pronta serviu; separada com IA (modo Alta)."
+    assert modos == ["qualidade"]
+    dados = json.loads((tmp_path / tarefa.id / "musica.json").read_text(encoding="utf-8"))
+    assert dados["modo"] == "qualidade"
+    assert dados["aviso"] == pronta.aviso
+    assert len(dados["faixas"]) == 4
+
+
+def test_progresso_so_avanca_mesmo_quando_cai_na_separacao(tmp_path):
+    vistos = []
+    fila = None
+
+    def preparar(*args):
+        versao_falsa(achou=False)(*args[:6], lambda fracao: (args[6](fracao), vistos.append(fila.tarefas()[0].progresso)))
+
+    def separar(audio, pasta, modo, pasta_modelos, ao_mudar_etapa):
+        for numero in (1, 2):
+            ao_mudar_etapa(numero, 2)
+            vistos.append(fila.tarefas()[0].progresso)
+        return separar_falso(audio, pasta, modo, pasta_modelos, lambda n, t: None)
+
+    fila = fila_falsa(tmp_path, preparar_versao=preparar, separar=separar)
+    fila.adicionar("yKNxeF4KMsY", "Yellow", modo=MODO_PRONTA)
+    fila.processar_proxima()
+    assert vistos == sorted(vistos) and 0 < vistos[0] and vistos[-1] < 1
+    assert fila.tarefas()[0].estado == PRONTA
+
+
+def test_procura_com_os_dados_da_musica(tmp_path):
+    preparar = versao_falsa()
+    fila = fila_falsa(tmp_path, preparar_versao=preparar)
+    fila.adicionar("yKNxeF4KMsY", "Yellow", "Coldplay", modo=MODO_PRONTA, duracao=269)
+    fila.processar_proxima()
+    assert preparar.pedido == ("Yellow", "Coldplay", 269, "yKNxeF4KMsY")
+
+
+def test_modo_reserva_precisa_existir(tmp_path):
+    with pytest.raises(ValueError):
+        fila_falsa(tmp_path, modo_reserva="pronta")

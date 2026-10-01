@@ -1,4 +1,4 @@
-"""Fila de preparo das músicas: baixar -> separar -> analisar o tom.
+"""Fila de preparo das músicas: baixar -> separar (ou achar a versão pronta) -> analisar o tom.
 
 Separar é pesado (usa toda a CPU ou a GPU), então a fila prepara UMA música
 por vez, numa thread separada, enquanto a API continua respondendo. Cada
@@ -17,10 +17,12 @@ from pathlib import Path
 from karaoke.analise import analisar_tom
 from karaoke.download import baixar_audio
 from karaoke.faixas import INSTRUMENTAL, Faixa, Musica
-from karaoke.separacao import obter_modo, separar
+from karaoke.separacao import MODOS, obter_modo, separar
+from karaoke.versoes import MODO_PRONTA, preparar_versao_pronta
 
 NA_FILA = "na fila"
 BAIXANDO = "baixando"
+PROCURANDO = "procurando versão pronta"
 SEPARANDO = "separando"
 ANALISANDO = "analisando"
 PRONTA = "pronta"
@@ -31,7 +33,9 @@ NOME_ORIGINAL = "original"  # faixa da música inteira, para o botão "tocar a o
 # Quanto do progresso total cada parte ocupa. A separação é quase tudo, e a
 # etapa 1 dela (voz x instrumental) demora perto do dobro da etapa 2.
 _FIM_DOWNLOAD = 0.05
-_FIM_ETAPA = {1: 0.65, 2: 0.95}
+_FIM_PROCURA = 0.5  # se nenhuma versão pronta servir, a separação usa o resto
+_COMECO_ANALISE = 0.95
+_PARTE_DA_ETAPA_1 = 2 / 3
 
 
 @dataclass
@@ -45,16 +49,21 @@ class Tarefa:
     estado: str = NA_FILA
     progresso: float = 0.0
     erro: str | None = None
+    aviso: str | None = None  # ex.: nenhuma versão pronta serviu e a música foi separada com IA
 
     def para_dict(self):
         return asdict(self)
 
 
 class Fila:
-    def __init__(self, pasta, pasta_modelos="modelos", baixar=baixar_audio, separar=separar, analisar=analisar_tom):
+    def __init__(self, pasta, pasta_modelos="modelos", baixar=baixar_audio, separar=separar, analisar=analisar_tom,
+                 preparar_versao=preparar_versao_pronta, modo_reserva="rapido"):
+        """`modo_reserva`: com que modo separar quando nenhuma versão pronta serve."""
         self.pasta = Path(pasta)
         self.pasta_modelos = pasta_modelos
         self._baixar, self._separar, self._analisar = baixar, separar, analisar
+        self._preparar_versao = preparar_versao
+        self.modo_reserva = obter_modo(modo_reserva).nome
         self._tarefas = {}
         self._condicao = threading.Condition()
         self._thread = None
@@ -62,7 +71,8 @@ class Fila:
     # ---------- consultas e pedidos (chamados pela API) ----------
 
     def adicionar(self, id_video, titulo, artista="", modo="rapido", duracao=None):
-        obter_modo(modo)  # dá erro se o modo não existir
+        if modo != MODO_PRONTA:
+            obter_modo(modo)  # dá erro se o modo não existir
         tarefa = Tarefa(uuid.uuid4().hex[:12], id_video, titulo.strip() or "(sem título)", artista.strip(), modo, duracao)
         with self._condicao:
             self._tarefas[tarefa.id] = tarefa
@@ -111,14 +121,12 @@ class Fila:
                 tarefa.id_video, pasta,
                 lambda fracao: self._atualizar(tarefa, progresso=round(fracao * _FIM_DOWNLOAD, 3)),
             )
-            self._atualizar(tarefa, estado=SEPARANDO, progresso=_FIM_DOWNLOAD)
-
-            def ao_mudar_etapa(numero, total):
-                inicio = _FIM_DOWNLOAD if numero == 1 else _FIM_ETAPA[numero - 1]
-                self._atualizar(tarefa, progresso=inicio)
-
-            faixas = self._separar(original, pasta, tarefa.modo, self.pasta_modelos, ao_mudar_etapa)
-            self._atualizar(tarefa, estado=ANALISANDO, progresso=_FIM_ETAPA[2])
+            faixas, extras = None, {"modo": tarefa.modo}
+            if tarefa.modo == MODO_PRONTA:
+                faixas, extras = self._procurar_versao_pronta(tarefa, original, pasta)
+            if faixas is None:
+                faixas = self._separar_com_ia(tarefa, original, pasta, extras["modo"])
+            self._atualizar(tarefa, estado=ANALISANDO, progresso=_COMECO_ANALISE)
 
             # O instrumental dá um tom mais confiável (a voz desafina, o arranjo não)
             instrumental = next(f for f in faixas if f.nome == INSTRUMENTAL)
@@ -126,15 +134,40 @@ class Fila:
 
             musica = Musica(tarefa.titulo, tarefa.artista, faixas + [Faixa(NOME_ORIGINAL, original.name, 0.0)],
                             tom, escala)
-            self._salvar(pasta, tarefa, musica)
+            self._salvar(pasta, tarefa, musica, extras)
             self._atualizar(tarefa, estado=PRONTA, progresso=1.0)
         except Exception as erro:  # qualquer falha vira mensagem na tela, e a fila segue
             shutil.rmtree(pasta, ignore_errors=True)
             self._atualizar(tarefa, estado=ERRO, erro=str(erro) or type(erro).__name__)
 
-    def _salvar(self, pasta, tarefa, musica):
-        dados = musica.para_dict() | {"id": tarefa.id, "id_video": tarefa.id_video, "modo": tarefa.modo,
-                                      "duracao": tarefa.duracao}
+    def _procurar_versao_pronta(self, tarefa, original, pasta):
+        """Devolve (faixas, extras) com a versão pronta, ou (None, extras) para separar com IA."""
+        self._atualizar(tarefa, estado=PROCURANDO, progresso=_FIM_DOWNLOAD)
+        versao = self._preparar_versao(
+            original, pasta, tarefa.titulo, tarefa.artista, tarefa.duracao, tarefa.id_video,
+            lambda fracao: self._atualizar(
+                tarefa, progresso=round(_FIM_DOWNLOAD + fracao * (_FIM_PROCURA - _FIM_DOWNLOAD), 3)),
+        )
+        if versao is not None:
+            return [versao.faixa], {"modo": MODO_PRONTA, "versao_pronta": versao.para_dict()}
+        reserva = MODOS[self.modo_reserva]
+        aviso = f"Nenhuma versão pronta serviu; separada com IA (modo {reserva.descricao})."
+        self._atualizar(tarefa, aviso=aviso)
+        return None, {"modo": reserva.nome, "aviso": aviso}
+
+    def _separar_com_ia(self, tarefa, original, pasta, modo):
+        inicio = tarefa.progresso
+        self._atualizar(tarefa, estado=SEPARANDO)
+
+        def ao_mudar_etapa(numero, total):
+            # A etapa 1 fica com 2/3 do que falta até a análise, a etapa 2 com o resto
+            parte = 0 if numero == 1 else _PARTE_DA_ETAPA_1
+            self._atualizar(tarefa, progresso=round(inicio + (_COMECO_ANALISE - inicio) * parte, 3))
+
+        return self._separar(original, pasta, modo, self.pasta_modelos, ao_mudar_etapa)
+
+    def _salvar(self, pasta, tarefa, musica, extras):
+        dados = musica.para_dict() | {"id": tarefa.id, "id_video": tarefa.id_video, "duracao": tarefa.duracao} | extras
         provisorio = pasta / "musica.json.tmp"
         provisorio.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
         provisorio.replace(pasta / "musica.json")  # troca de uma vez: nunca fica um JSON pela metade

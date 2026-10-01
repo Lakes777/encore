@@ -20,6 +20,7 @@ from karaoke.letras import baixar_letra, buscar_versoes
 from karaoke.previa import Previas
 from karaoke.fila import Fila
 from karaoke.separacao import MODOS, detectar_dispositivo, estimar_segundos, modo_padrao
+from karaoke import versoes
 
 
 class PedidoFila(BaseModel):
@@ -48,7 +49,8 @@ ERRO_INTERNET = "{servico} não respondeu. Confira a internet e tente de novo."
 
 
 def _estimativas(dispositivo, duracao):
-    return {nome: estimar_segundos(nome, dispositivo, duracao) for nome in MODOS}
+    estimativas = {versoes.MODO_PRONTA: versoes.estimar_segundos(duracao)}
+    return estimativas | {nome: estimar_segundos(nome, dispositivo, duracao) for nome in MODOS}
 
 
 def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=pedir_json, pasta_site=None,
@@ -74,7 +76,10 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
         return {
             "dispositivo": dispositivo,
             "modo_padrao": modo_padrao(dispositivo),
-            "modos": [{"nome": m.nome, "descricao": m.descricao} for m in MODOS.values()],
+            # A versão pronta vem primeiro: quando acha, leva 1-2 min em vez de vários
+            "modos": [{"nome": versoes.MODO_PRONTA, "descricao": "Versão pronta"}]
+            + [{"nome": m.nome, "descricao": m.descricao} for m in MODOS.values()],
+            "modo_reserva": fila.modo_reserva,
         }
 
     @app.get("/api/busca")
