@@ -63,6 +63,7 @@ Variáveis opcionais: `KARAOKE_DADOS` (pasta das músicas, padrão `dados`), `KA
 |---|---|
 | `GET /api/sistema` | Dispositivo (`cpu`/`cuda`), modo padrão e modos disponíveis |
 | `GET /api/busca?q=` | Busca pelo nome ou link; cada resultado traz o início da prévia e o tempo estimado de cada modo |
+| `GET /api/previa/{id_video}` | Áudio do vídeo repassado do YouTube em pedaços (Range), para a prévia tocar no próprio site |
 | `GET/POST /api/fila`, `DELETE /api/fila/{id}` | Fila de preparo, com estado e progresso |
 | `GET /api/musicas`, `GET/DELETE /api/musicas/{id}` | Músicas prontas |
 | `GET /api/musicas/{id}/faixas/{arquivo}` | Áudio de uma faixa (aceita Range, para pular na música) |
@@ -96,6 +97,7 @@ karaoke/
   biblioteca.py  # Lista, abre e apaga as músicas prontas
   letras.py      # LRCLIB, limpeza do título do YouTube e leitura do formato .lrc
   capas.py       # Capas do iTunes
+  previa.py      # Repassa o áudio do YouTube para a prévia da busca
   internet.py    # Pedidos às APIs públicas
   api.py         # Rotas da API (FastAPI)
   __main__.py    # python -m karaoke
@@ -137,8 +139,10 @@ web/                 # Site em React + TypeScript (Vite)
   e as outras são puxadas de volta quando se afastam mais de 80 ms dela (menos as que ainda estão
   carregando um trecho, para não cancelar a busca). No futuro isso também permite mudar a
   velocidade sem mudar o tom (`playbackRate` + `preservesPitch`).
-- **Prévia pelo arquivo baixado.** O player embutido do YouTube recusa muitas músicas de
-  gravadora quando o site é local; para as músicas já baixadas, a prévia toca o áudio original.
+- **Prévia sem o player do YouTube.** O player embutido recusa muitas músicas de gravadora quando
+  o site é local. Então a prévia toca num `<audio>` do próprio site: nas músicas já baixadas, o
+  áudio original; nos resultados da busca, o yt-dlp acha o endereço do áudio e o servidor repassa
+  só os pedaços que o navegador pede (Range), sem baixar a música inteira.
 
 ## Próximos passos
 

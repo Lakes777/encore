@@ -157,17 +157,19 @@ describe('busca', () => {
     const [primeira, segunda] = await screen.findAllByRole('button', { name: 'Prévia' })
 
     await usuario.click(primeira)
-    expect(screen.getByTitle('Prévia de Help! (Remastered 2009)')).toHaveAttribute(
-      'src',
-      'https://www.youtube-nocookie.com/embed/2Q_ZzBGPdqE?start=46&end=61&autoplay=1',
+    // O áudio vem do nosso servidor; o link leva ao mesmo ponto no YouTube
+    expect(screen.getByLabelText('Prévia de Help! (Remastered 2009)')).toHaveAttribute('src', '/api/previa/2Q_ZzBGPdqE')
+    expect(screen.getByRole('link', { name: 'Abrir no YouTube' })).toHaveAttribute(
+      'href',
+      'https://www.youtube.com/watch?v=2Q_ZzBGPdqE&t=46s',
     )
 
     await usuario.click(segunda)
-    expect(screen.queryByTitle('Prévia de Help! (Remastered 2009)')).not.toBeInTheDocument()
-    expect(screen.getByTitle('Prévia de Outra')).toHaveAttribute('src', expect.stringContaining('start=0&end=15'))
+    expect(screen.queryByLabelText('Prévia de Help! (Remastered 2009)')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Prévia de Outra')).toHaveAttribute('src', '/api/previa/xxxxxxxxxxx')
 
     await usuario.click(screen.getByRole('button', { name: 'Fechar a prévia' }))
-    expect(screen.queryByTitle(/Prévia de/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Prévia de/)).not.toBeInTheDocument()
   })
 })
 
@@ -280,15 +282,13 @@ describe('minhas músicas', () => {
     expect(await screen.findByText(/Busque uma música acima/)).toBeInTheDocument()
   })
 
-  it('ouve a prévia de novo a partir de um terço da música', async () => {
+  it('sem a faixa original, a prévia vem do YouTube pelo servidor, a partir de um terço', async () => {
     chamadas.musicas.mockResolvedValue([musica({ duracao: 150 })])
     const usuario = userEvent.setup()
     render(<TelaInicio />)
     await usuario.click(await screen.findByRole('button', { name: 'Ouvir a prévia de Help!' }))
-    expect(screen.getByTitle('Prévia de Help!')).toHaveAttribute(
-      'src',
-      'https://www.youtube-nocookie.com/embed/2Q_ZzBGPdqE?start=50&end=65&autoplay=1',
-    )
+    expect(screen.getByLabelText('Prévia de Help!')).toHaveAttribute('src', '/api/previa/2Q_ZzBGPdqE')
+    expect(screen.getByRole('link', { name: 'Abrir no YouTube' })).toHaveAttribute('href', expect.stringContaining('t=50s'))
   })
 
   it('música baixada toca a prévia do próprio arquivo original', async () => {
@@ -299,7 +299,6 @@ describe('minhas músicas', () => {
     render(<TelaInicio />)
     await usuario.click(await screen.findByRole('button', { name: 'Ouvir a prévia de Help!' }))
     expect(screen.getByLabelText('Prévia de Help!')).toHaveAttribute('src', expect.stringMatching(/\/faixas\/original\.wav$/))
-    expect(screen.queryByTitle('Prévia de Help!')).not.toBeInTheDocument()
   })
 
   it('apaga depois de confirmar', async () => {

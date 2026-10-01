@@ -74,3 +74,8 @@ export const api = {
 export function urlDaFaixa(idMusica: string, arquivo: string) {
   return `${daMusica(idMusica)}/faixas/${encodeURIComponent(arquivo)}`
 }
+
+/** Prévia de um vídeo da busca: o servidor repassa o áudio do YouTube em pedaços. */
+export function urlDaPrevia(idVideo: string) {
+  return `/api/previa/${encodeURIComponent(idVideo)}`
+}

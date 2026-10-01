@@ -1,6 +1,6 @@
 import { Check, Play, Plus, Search } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { api } from '../logica/api.ts'
+import { api, urlDaPrevia } from '../logica/api.ts'
 import { formatarDuracao, formatarEstimativa } from '../logica/formatar.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import type { NomeModo, ResultadoBusca, Sistema, Tarefa } from '../logica/tipos.ts'
@@ -190,6 +190,7 @@ function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, 
 
       {previaAberta && (
         <Previa
+          url={urlDaPrevia(resultado.id)}
           idVideo={resultado.id}
           inicio={resultado.inicio_previa}
           titulo={resultado.titulo}

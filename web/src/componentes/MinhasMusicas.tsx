@@ -1,6 +1,6 @@
 import { FileText, Image as IconeImagem, Play, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { api, urlDaFaixa } from '../logica/api.ts'
+import { api, urlDaFaixa, urlDaPrevia } from '../logica/api.ts'
 import { descricaoTom } from '../logica/formatar.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import { linkDaMusica } from '../logica/rota.ts'
@@ -9,7 +9,6 @@ import { inicioDaPrevia } from '../logica/youtube.ts'
 import { DialogoFundo } from './DialogoFundo.tsx'
 import { DialogoLetra } from './DialogoLetra.tsx'
 import { Previa } from './Previa.tsx'
-import { PreviaLocal } from './PreviaLocal.tsx'
 
 interface Props {
   /** null enquanto carrega. */
@@ -117,22 +116,15 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
                     </button>
                   </div>
                 </div>
-                {comPrevia &&
-                  (original ? (
-                    <PreviaLocal
-                      url={urlDaFaixa(musica.id, original.arquivo)}
-                      inicio={inicioDaPrevia(musica.duracao)}
-                      titulo={musica.titulo}
-                      aoFechar={() => abrirPrevia(null)}
-                    />
-                  ) : (
-                    <Previa
-                      idVideo={musica.id_video}
-                      inicio={inicioDaPrevia(musica.duracao)}
-                      titulo={musica.titulo}
-                      aoFechar={() => abrirPrevia(null)}
-                    />
-                  ))}
+                {comPrevia && (
+                  <Previa
+                    url={original ? urlDaFaixa(musica.id, original.arquivo) : urlDaPrevia(musica.id_video)}
+                    idVideo={musica.id_video}
+                    inicio={inicioDaPrevia(musica.duracao)}
+                    titulo={musica.titulo}
+                    aoFechar={() => abrirPrevia(null)}
+                  />
+                )}
               </li>
             )
           })}

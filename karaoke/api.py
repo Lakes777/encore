@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,7 @@ from karaoke.busca import LIMITE_MAXIMO, LIMITE_PADRAO, buscar
 from karaoke.capas import buscar_capas
 from karaoke.internet import pedir_json
 from karaoke.letras import baixar_letra, buscar_versoes
+from karaoke.previa import Previas
 from karaoke.fila import Fila
 from karaoke.separacao import MODOS, detectar_dispositivo, estimar_segundos, modo_padrao
 
@@ -50,11 +51,13 @@ def _estimativas(dispositivo, duracao):
     return {nome: estimar_segundos(nome, dispositivo, duracao) for nome in MODOS}
 
 
-def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=pedir_json, pasta_site=None):
+def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=pedir_json, pasta_site=None,
+              previas=None):
     """Monta o app. `pasta_site` é o site compilado (web/dist), servido em "/" se existir."""
     dispositivo = dispositivo or detectar_dispositivo()
     fila = fila or Fila(pasta_dados)
     biblioteca = Biblioteca(pasta_dados)
+    previas = previas or Previas()
     app = FastAPI(title="Karaokê Web")
     app.state.fila = fila
 
@@ -85,6 +88,18 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
         except Exception:
             raise HTTPException(502, ERRO_INTERNET.format(servico="O YouTube")) from None
         return [r.para_dict() | {"estimativas": _estimativas(dispositivo, r.duracao)} for r in resultados]
+
+    @app.get("/api/previa/{id_video}")
+    def previa(id_video: str, request: Request):
+        # O <audio> pede o arquivo em pedaços (Range); cada pedaço é repassado do YouTube
+        try:
+            status, cabecalhos, pedacos = previas.abrir(id_video, request.headers.get("range"))
+        except ValueError as erro:
+            raise HTTPException(422, str(erro)) from None
+        except Exception:
+            raise HTTPException(502, ERRO_INTERNET.format(servico="O YouTube")) from None
+        return StreamingResponse(pedacos, status_code=status, headers=cabecalhos,
+                                 media_type=cabecalhos.get("Content-Type", "audio/mp4"))
 
     @app.get("/api/fila")
     def listar_fila():
