@@ -125,6 +125,7 @@ Fase 1: karaokê
 - [x] Fila com progresso numa thread: baixar, separar e analisar, uma música por vez
 - [x] Letras sincronizadas do LRCLIB (versões com duração parecida primeiro) e capas do iTunes
 - [x] API (FastAPI): busca com estimativa por modo, fila, lista de músicas e faixas com Range
+- [ ] Separar músicas longas em pedaços: 75 s já usam 3,2 GB de RAM no modo Rápida
 - [ ] Telas (React): busca com prévia, lista, tela da música (letra sincronizada, volumes, tela cheia, fundo com desfoque)
 
 Fase 2: versões prontas
