@@ -1,0 +1,14 @@
+# Ambiente virtual
+.venv/
+
+# Cache do Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Músicas baixadas, faixas separadas e modelos de IA (pesados e pessoais)
+dados/
+modelos/
+
+# Worktrees e configurações locais do Claude Code
+.claude/
