@@ -65,8 +65,13 @@ def separar_falso(audio, pasta, modo, pasta_modelos, ao_mudar_etapa, verificar=N
             Faixa(INSTRUMENTAL, "instrumental.wav")]
 
 
+RITMO_FALSO = {"bpm": 95.7, "batidas": [0.673, 1.347, 1.974]}
+TRECHOS_FALSOS = [[0.697, 1.091], [1.788, 3.692]]
+
+
 def fila_falsa(tmp_path, **troca):
-    partes = {"baixar": baixar_falso, "separar": separar_falso, "analisar": lambda caminho: ("A", "maior")}
+    partes = {"baixar": baixar_falso, "separar": separar_falso, "analisar": lambda caminho: ("A", "maior"),
+              "ritmo": lambda caminho: RITMO_FALSO, "voz": lambda caminho: TRECHOS_FALSOS}
     return Fila(tmp_path, **(partes | troca))
 
 
@@ -105,6 +110,57 @@ def test_analisa_o_tom_pelo_instrumental(tmp_path):
     fila.adicionar("2Q_ZzBGPdqE", "Help!")
     fila.processar_proxima()
     assert analisados == ["instrumental.wav"]
+
+
+def test_salva_ritmo_do_instrumental_e_trechos_da_voz_principal(tmp_path):
+    lidos = []
+    fila = fila_falsa(tmp_path, ritmo=lambda caminho: lidos.append(caminho.name) or RITMO_FALSO,
+                      voz=lambda caminho: lidos.append(caminho.name) or TRECHOS_FALSOS)
+    tarefa = fila.adicionar("2Q_ZzBGPdqE", "Help!")
+    fila.processar_proxima()
+
+    assert lidos == ["instrumental.wav", "voz-principal.wav"]
+    dados = json.loads((tmp_path / tarefa.id / "musica.json").read_text(encoding="utf-8"))
+    assert dados["bpm"] == 95.7
+    assert dados["batidas"] == [0.673, 1.347, 1.974]
+    assert dados["trechos_voz"] == [[0.697, 1.091], [1.788, 3.692]]
+    assert Musica.de_dict(dados).descricao_tom() == "A maior"  # os campos novos não atrapalham a leitura
+
+
+@pytest.mark.parametrize("quebra", ["ritmo", "voz"])
+def test_falha_nas_analises_extras_nao_derruba_a_musica(tmp_path, quebra):
+    def quebrado(caminho):
+        raise RuntimeError("librosa não instalado")
+
+    fila = fila_falsa(tmp_path, **{quebra: quebrado})
+    tarefa = fila.adicionar("2Q_ZzBGPdqE", "Help!")
+    fila.processar_proxima()
+
+    assert (fila.tarefas()[0].estado, fila.tarefas()[0].erro) == (PRONTA, None)
+    dados = json.loads((tmp_path / tarefa.id / "musica.json").read_text(encoding="utf-8"))
+    assert (dados["tom"], dados["escala"]) == ("A", "maior")
+    if quebra == "ritmo":
+        assert "bpm" not in dados and "batidas" not in dados  # ausente: o comando completa depois
+        assert dados["trechos_voz"] == TRECHOS_FALSOS
+    else:
+        assert "trechos_voz" not in dados
+        assert dados["bpm"] == 95.7
+
+
+def test_sem_batidas_grava_bpm_vazio(tmp_path):
+    fila = fila_falsa(tmp_path, ritmo=lambda caminho: {"bpm": None, "batidas": []})
+    tarefa = fila.adicionar("2Q_ZzBGPdqE", "Help!")
+    fila.processar_proxima()
+    dados = json.loads((tmp_path / tarefa.id / "musica.json").read_text(encoding="utf-8"))
+    assert (dados["bpm"], dados["batidas"]) == (None, [])
+
+
+def test_cancelar_durante_as_analises_extras_apaga_a_musica(tmp_path):
+    fila = fila_falsa(tmp_path, voz=lambda caminho: fila.esquecer(tarefa.id) or TRECHOS_FALSOS)
+    tarefa = fila.adicionar("2Q_ZzBGPdqE", "Help!")
+    fila.processar_proxima()
+    assert fila.tarefas() == []
+    assert not (tmp_path / tarefa.id).exists()
 
 
 def test_progresso_so_avanca(tmp_path):
@@ -263,6 +319,8 @@ def test_versao_pronta_vira_o_instrumental_sem_separar(tmp_path):
     assert dados["versao_pronta"]["id_video"] == "7-4qKAseIXQ"
     assert dados["versao_pronta"]["velocidade_corrigida"] == 1.5
     assert "aviso" not in dados
+    assert dados["bpm"] == 95.7
+    assert "trechos_voz" not in dados  # a versão pronta não tem a voz sozinha
 
 
 def test_sem_versao_pronta_separa_com_o_modo_reserva_e_avisa(tmp_path):
