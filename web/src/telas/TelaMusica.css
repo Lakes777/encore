@@ -10,6 +10,9 @@
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  /* clip (e não só hidden): o fundo ampliado sobra para os lados e, com hidden, focar
+     um controle pelo teclado rolava a tela inteira para o lado e para cima */
+  overflow: clip;
   background: var(--bg);
 }
 
