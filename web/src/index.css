@@ -363,7 +363,8 @@ input[type='range'] {
   .cartao.spot:has(:focus-visible),
   .botao--vivo:hover:not(:disabled),
   .musica:hover .musica__capa img,
-  .inicio__logo:hover {
+  .inicio__logo:hover,
+  .lobby__destaque:hover {
     transform: none !important;
   }
 }

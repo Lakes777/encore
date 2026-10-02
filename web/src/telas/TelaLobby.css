@@ -157,7 +157,19 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: rgb(22 23 26 / 0.8);
-  backdrop-filter: blur(6px);
+  transition:
+    transform 0.35s var(--ease-out),
+    border-color 0.35s,
+    box-shadow 0.35s;
+}
+
+/* Cartões que saltam um pouco com o mouse, como no portfólio e no Controle de Gastos */
+@media (hover: hover) {
+  .lobby__destaque:hover {
+    transform: translateY(-4px);
+    border-color: #3a3d44;
+    box-shadow: 0 16px 36px rgb(0 0 0 / 0.35);
+  }
 }
 
 .lobby__destaque strong {

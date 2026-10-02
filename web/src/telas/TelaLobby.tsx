@@ -70,7 +70,7 @@ export function TelaLobby({ prontas }: Props) {
 
         <ul className="lobby__destaques">
           {DESTAQUES.map(({ icone: Icone, titulo, texto }) => (
-            <li key={titulo} className="lobby__destaque">
+            <li key={titulo} className="lobby__destaque spot">
               <span className="lobby__icone" aria-hidden>
                 <Icone size={20} aria-hidden />
               </span>
