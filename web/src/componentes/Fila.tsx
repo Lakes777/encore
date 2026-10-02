@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../logica/api.ts'
+import { nomeDaMusica } from '../logica/formatar.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import { nomeDoModo, rodando, TEXTO_DO_ESTADO } from '../logica/fila.ts'
 import type { Sistema, Tarefa } from '../logica/tipos.ts'
@@ -21,7 +22,7 @@ export function Fila({ tarefas, sistema, aoRemover, aoCancelar }: Props) {
 
   async function remover(tarefa: Tarefa) {
     const cancelar = rodando(tarefa.estado)
-    if (cancelar && !window.confirm(`Cancelar "${tarefa.titulo}"? O que já foi baixado ou separado será apagado.`)) return
+    if (cancelar && !window.confirm(`Cancelar "${nomeDaMusica(tarefa)}"? O que já foi baixado ou separado será apagado.`)) return
     setErro('')
     try {
       await api.esquecerTarefa(tarefa.id)
@@ -44,13 +45,16 @@ export function Fila({ tarefas, sistema, aoRemover, aoCancelar }: Props) {
       )}
       <ul className="lista">
         {tarefas.map((tarefa) => {
+          const nome = nomeDaMusica(tarefa)
           const porcento = Math.round(Math.min(1, Math.max(0, tarefa.progresso)) * 100)
           return (
             <li key={tarefa.id} className={`cartao tarefa tarefa--${tarefa.estado === 'na fila' ? 'na-fila' : tarefa.estado}`}>
               <div className="tarefa__topo">
                 <Capa url={miniaturaDoVideo(tarefa.id_video)} className="tarefa__capa" />
                 <div className="tarefa__texto">
-                  <h3 className="tarefa__titulo">{tarefa.titulo}</h3>
+                  <h3 className="tarefa__titulo" title={nome === tarefa.titulo ? undefined : tarefa.titulo}>
+                    {nome}
+                  </h3>
                   <p className="texto-fraco">
                     <span className="tarefa__estado">{TEXTO_DO_ESTADO[tarefa.estado]}</span> · {porcento}% · {nomeDoModo(tarefa.modo, sistema)}
                   </p>
@@ -59,7 +63,7 @@ export function Fila({ tarefas, sistema, aoRemover, aoCancelar }: Props) {
                   <button
                     type="button"
                     className="botao botao--icone botao--perigo"
-                    aria-label={rodando(tarefa.estado) ? `Cancelar ${tarefa.titulo}` : `Tirar ${tarefa.titulo} da fila`}
+                    aria-label={rodando(tarefa.estado) ? `Cancelar ${nome}` : `Tirar ${nome} da fila`}
                     title={rodando(tarefa.estado) ? 'Cancelar' : 'Tirar da fila'}
                     onClick={() => remover(tarefa)}
                   >
@@ -70,7 +74,7 @@ export function Fila({ tarefas, sistema, aoRemover, aoCancelar }: Props) {
               <div
                 className="progresso"
                 role="progressbar"
-                aria-label={`Progresso de ${tarefa.titulo}`}
+                aria-label={`Progresso de ${nome}`}
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={porcento}

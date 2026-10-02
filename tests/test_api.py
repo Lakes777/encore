@@ -78,6 +78,17 @@ def test_adiciona_na_fila_com_o_modo_padrao(pasta):
     assert [t["estado"] for t in api.get("/api/fila").json()] == ["na fila"]
 
 
+def test_fila_traz_o_titulo_limpo_sem_perder_o_original(pasta):
+    api = cliente(pasta)
+    titulo = "Audioslave - Like a Stone (Official Video)"
+    criada = api.post("/api/fila", json={"id_video": "7QU1nvuxaMA", "titulo": titulo, "artista": "Audioslave"}).json()
+    assert (criada["titulo"], criada["titulo_limpo"]) == (titulo, "Like a Stone")
+    vazio = api.post("/api/fila", json={"id_video": "2Q_ZzBGPdqE", "titulo": "[Official Video]"}).json()
+    assert vazio["titulo_limpo"] == "[Official Video]"
+    assert [(t["titulo"], t["titulo_limpo"]) for t in api.get("/api/fila").json()] == [
+        (titulo, "Like a Stone"), ("[Official Video]", "[Official Video]")]
+
+
 @pytest.mark.parametrize("pedido", [
     {"id_video": "curto", "titulo": "Help!"},
     {"id_video": "2Q_ZzBGPdqE", "titulo": "Help!", "modo": "ultra"},
@@ -145,6 +156,13 @@ def test_lista_e_musica_trazem_o_titulo_limpo_sem_perder_o_original(pasta):
     assert (musica["titulo"], musica["titulo_limpo"]) == (titulo, "Help!")
     # o campo é só para a tela: não vai para o musica.json
     assert "titulo_limpo" not in json.loads((pasta / ID_MUSICA / "musica.json").read_text(encoding="utf-8"))
+
+
+def test_titulo_que_vira_vazio_ao_limpar_fica_o_original(pasta):
+    musica_salva(pasta, titulo="[Official Video]")
+    api = cliente(pasta)
+    assert api.get("/api/musicas").json()[0]["titulo_limpo"] == "[Official Video]"
+    assert api.get(f"/api/musicas/{ID_MUSICA}").json()["titulo_limpo"] == "[Official Video]"
 
 
 def test_lista_ignora_json_estragado(pasta):

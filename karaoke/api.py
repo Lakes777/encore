@@ -62,7 +62,8 @@ def _estimativas(dispositivo, duracao):
 def _com_titulo_limpo(musica):
     """Junta o título sem os enfeites do YouTube ("Bat Country" em vez de
     "Avenged Sevenfold - Bat Country [Official Music Video]"), só para a tela mostrar.
-    Não é salvo: o título original continua sendo o que vale para letra e capa."""
+    Serve para músicas e tarefas da fila. Não é salvo: o título original continua
+    sendo o que vale para letra e capa. Se a limpeza não sobrar nada, fica o original."""
     titulo, _ = limpar_titulo(musica.get("titulo", ""), musica.get("artista", ""))
     return {**musica, "titulo_limpo": titulo or musica.get("titulo", "")}
 
@@ -123,7 +124,7 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
 
     @app.get("/api/fila")
     def listar_fila():
-        return [t.para_dict() for t in fila.tarefas()]
+        return [_com_titulo_limpo(t.para_dict()) for t in fila.tarefas()]
 
     @app.post("/api/fila", status_code=201)
     def adicionar_na_fila(pedido: PedidoFila):
@@ -132,7 +133,7 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
                                     pedido.modo or modo_padrao(dispositivo), pedido.duracao)
         except ValueError as erro:
             raise HTTPException(422, str(erro)) from None
-        return tarefa.para_dict()
+        return _com_titulo_limpo(tarefa.para_dict())
 
     @app.delete("/api/fila/{id_tarefa}", status_code=204)
     def esquecer_tarefa(id_tarefa: str):

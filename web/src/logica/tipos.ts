@@ -42,6 +42,8 @@ export interface Tarefa {
   id: string
   id_video: string
   titulo: string
+  /** O título sem os enfeites do YouTube, só para mostrar (igual ao das músicas). */
+  titulo_limpo?: string
   artista: string
   modo: NomeModo
   duracao: number | null

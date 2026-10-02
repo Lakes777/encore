@@ -233,6 +233,18 @@ describe('fila', () => {
   // Deixa as promessas resolverem e os efeitos rodarem com o relógio falso.
   const esperar = (ms = 0) => act(() => vi.advanceTimersByTimeAsync(ms))
 
+  it('mostra o título limpo, com o original no title, e a miniatura do vídeo', async () => {
+    chamadas.fila.mockResolvedValue([
+      tarefa({ id_video: '7QU1nvuxaMA', titulo: 'Audioslave - Like a Stone (Official Video)', titulo_limpo: 'Like a Stone', estado: 'erro', erro: 'x' }),
+    ])
+    render(<TelaInicio />)
+    const titulo = await screen.findByRole('heading', { name: 'Like a Stone' })
+    expect(titulo).toHaveAttribute('title', 'Audioslave - Like a Stone (Official Video)')
+    const fila = titulo.closest('section')!
+    expect(within(fila).getByRole('button', { name: 'Tirar Like a Stone da fila' })).toBeInTheDocument()
+    expect(within(fila).getByTestId('capa').querySelector('img')).toHaveAttribute('src', 'https://i.ytimg.com/vi/7QU1nvuxaMA/hqdefault.jpg')
+  })
+
   it('mostra o progresso, consulta de novo e recarrega as músicas quando fica pronta', async () => {
     vi.useFakeTimers()
     chamadas.fila
