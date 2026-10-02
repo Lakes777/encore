@@ -1,5 +1,5 @@
 import { Check, Play, Plus, Search } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { api, urlDaPrevia } from '../logica/api.ts'
 import { formatarDuracao, formatarEstimativa } from '../logica/formatar.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
@@ -25,21 +25,38 @@ export function Busca({ sistema, videosNaFila, aoAdicionar, previaAberta, abrirP
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState('')
   const [resultados, setResultados] = useState<ResultadoBusca[] | null>(null)
+  // Conta as buscas: a resposta de uma busca antiga (ou apagada) não aparece mais
+  const ultimaBusca = useRef(0)
 
   async function buscar(evento: FormEvent) {
     evento.preventDefault()
     const pedido = texto.trim()
     if (!pedido || carregando) return
+    const numero = ++ultimaBusca.current
     setCarregando(true)
     setErro('')
     try {
-      setResultados(await api.buscar(pedido))
+      const achados = await api.buscar(pedido)
+      if (numero === ultimaBusca.current) setResultados(achados)
     } catch (falha) {
-      setErro(mensagemDoErro(falha))
-      setResultados(null)
+      if (numero === ultimaBusca.current) {
+        setErro(mensagemDoErro(falha))
+        setResultados(null)
+      }
     } finally {
-      setCarregando(false)
+      if (numero === ultimaBusca.current) setCarregando(false)
     }
+  }
+
+  function mudarTexto(novo: string) {
+    setTexto(novo)
+    if (novo.trim()) return
+    // Campo apagado (ou o "x" do campo de busca): some com os resultados e a prévia deles
+    ultimaBusca.current++
+    setResultados(null)
+    setErro('')
+    setCarregando(false)
+    if (previaAberta?.startsWith('busca:')) abrirPrevia(null)
   }
 
   return (
@@ -55,7 +72,7 @@ export function Busca({ sistema, videosNaFila, aoAdicionar, previaAberta, abrirP
           type="search"
           placeholder="nome da música ou link do YouTube"
           value={texto}
-          onChange={(evento) => setTexto(evento.target.value)}
+          onChange={(evento) => mudarTexto(evento.target.value)}
         />
         <button type="submit" className="botao botao--principal" disabled={carregando || !texto.trim()}>
           <Search size={16} aria-hidden />

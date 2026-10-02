@@ -160,6 +160,27 @@ describe('busca', () => {
     expect(screen.queryByText(/Sem placa de vídeo/)).not.toBeInTheDocument()
   })
 
+  it('apagar o texto some com os resultados e a prévia', async () => {
+    chamadas.buscar.mockResolvedValue([resultado()])
+    const usuario = await buscar()
+    await usuario.click(await screen.findByRole('button', { name: 'Prévia' }))
+    expect(screen.getByLabelText(/Prévia de Help!/)).toBeInTheDocument()
+
+    await usuario.clear(screen.getByRole('searchbox'))
+    expect(screen.queryByRole('heading', { name: 'Help! (Remastered 2009)' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Prévia de Help!/)).not.toBeInTheDocument()
+  })
+
+  it('a resposta de uma busca apagada não aparece depois', async () => {
+    let responder: (lista: ResultadoBusca[]) => void = () => {}
+    chamadas.buscar.mockReturnValue(new Promise((pronto) => (responder = pronto)))
+    const usuario = await buscar()
+    await usuario.clear(screen.getByRole('searchbox'))
+    await act(async () => responder([resultado()]))
+    expect(screen.queryByRole('heading', { name: 'Help! (Remastered 2009)' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Buscar' })).toBeDisabled() // campo vazio
+  })
+
   it('mostra o erro da busca', async () => {
     chamadas.buscar.mockRejectedValue(new ErroApi(502, 'O YouTube não respondeu. Confira a internet e tente de novo.'))
     await buscar()
