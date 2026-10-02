@@ -11,6 +11,8 @@ import { Previa } from './Previa.tsx'
 export const AVISO_ALTA_NA_CPU = 'Sem placa de vídeo, o modo Alta fica muito lento.'
 export const AVISO_CLIPE =
   'Videoclipe: pode ter introdução ou cenas a mais, e aí a letra e a versão pronta saem do tempo. Prefira o áudio da música.'
+export const AVISO_AO_VIVO =
+  'Ao vivo: outra gravação, com andamento e partes diferentes do disco, e aí a letra e a versão pronta saem do tempo. Prefira o áudio da música.'
 
 interface Props {
   sistema: Sistema | null
@@ -166,6 +168,7 @@ function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, 
               {AVISO_CLIPE}
             </p>
           )}
+          {resultado.tipo === 'ao_vivo' && <p className="aviso">{AVISO_AO_VIVO}</p>}
         </div>
       </div>
 

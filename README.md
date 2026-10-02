@@ -192,7 +192,7 @@ Fase 1: karaokê
 - [x] Velocidade sem mudar o tom (playbackRate + preservesPitch) e metrônomo pelo Web Audio, agendado à frente para não atrasar
 - [x] Sincronia da letra automática (pelos trechos de voz) e manual, salva por música
 - [x] Palavra que acende, estimada pelas sílabas dentro do tempo de voz de cada verso
-- [x] Avisar quando o resultado da busca é um videoclipe e mostrar primeiro o áudio da música
+- [x] Avisar quando o resultado da busca é um videoclipe ou ao vivo e mostrar primeiro o áudio da música
 - [ ] Levar velocidade e metrônomo para o modo instrumento quando ele existir
 - [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 

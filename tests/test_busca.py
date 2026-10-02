@@ -126,17 +126,43 @@ def test_para_dict_traz_url_e_inicio_da_previa():
     ("Banda - Música (Áudio)", "Banda", "audio"),
     ("Like a Stone (Official Lyric Video)", "Audioslave", "audio"),
     ("Banda - Música (Lyrics/Letra)", "Fã", "audio"),
-    ("Letra e Música - Live", "Fã", None),  # "Letra" no nome da música não é lyric video
+    ("Letra e Música (HD)", "Fã", None),  # "Letra" no nome da música não é lyric video
     ("Lyric - Canção", "Fã", None),
     ("Audioslave - Like a stone (HD)", "Fã", None),
-    ("Audioslave - Like A Stone (Live 8 2005)", "Fã", None),
+    ("Audioslave - Like A Stone (Live 8 2005)", "Fã", "ao_vivo"),
+    ("Audioslave - Like a Stone (Live on Broadway) 11-25-02", "Fã", "ao_vivo"),
+    ("Audioslave - Like a Stone (Sessions @ AOL 2003)", "Audioslave", "ao_vivo"),
+    ("Chris Cornell - Like a Stone Acoustic Live (Unplugged Sessions @ AOL)", "Fã", "ao_vivo"),
+    ("Banda - Música (Ao Vivo)", "Banda", "ao_vivo"),
+    ("Banda - Música Ao Vivo No Rock in Rio", "Banda", "ao_vivo"),
+    ("Banda - Música [Acústico]", "Banda", "ao_vivo"),
+    ("Banda - Música Live at Wembley", "Banda", "ao_vivo"),
+    ("Like a Stone (Live)", "Audioslave - Topic", "ao_vivo"),  # disco ao vivo no canal Topic
+    ("Audioslave - Show Me How to Live (Official Video)", "Audioslave", "clipe"),  # "Live" no nome da música
+    ("Show Me How to Live", "Audioslave - Topic", "audio"),
+    ("AudioSlave - Show Me How To Live - Live (2004)", "Fã", "ao_vivo"),
+    ("Audioslave - Cochise - Live", "Fã", "ao_vivo"),
+    ("Mötley Crüe - Live Wire", "Fã", None),  # "Live Wire" é nome de música
+    ("The World We Live In", "The Killers - Topic", "audio"),
+    ("Portugal. The Man - Live in the Moment", "Fã", None),
+    ("We Live On (Official)", "Fã", None),
+    ("Matheus & Kauan - Ao Vivo e a Cores", "Fã", None),
+    ("Audioslave - Cochise - Live 2005", "Fã", "ao_vivo"),
+    ("Banda - Música — Live", "Fã", "ao_vivo"),
+    ("Banda - Música - Live!", "Fã", "ao_vivo"),
+    ("Natasha - Acústico MTV", "Fã", "ao_vivo"),
+    ("Banda - Canción (En Vivo)", "Fã", "ao_vivo"),
+    ("Banda - Música (Acoustic)", "Fã", "ao_vivo"),
+    ("Banda: NPR Music Tiny Desk Concert", "NPR Music", "ao_vivo"),
+    ("Audioslave Performs Show Me How to Live | Live in Cuba | Front Row Music", "Fã", "ao_vivo"),
+    ("Banda - Música - Ao Vivo", "Fã", "ao_vivo"),
     ("Videogame", "Fã", None),  # "video" só como palavra solta não é clipe
 ])
 def test_tipo_do_video(titulo, canal, tipo):
     assert tipo_do_video(titulo, canal) == tipo
 
 
-def test_busca_poe_o_audio_primeiro_e_os_clipes_por_ultimo():
+def test_busca_poe_o_audio_primeiro_e_clipes_e_ao_vivo_por_ultimo():
     def item(id_, titulo):
         return {"id": id_, "title": titulo, "channel": "Fã", "duration": 300}
 
@@ -144,10 +170,11 @@ def test_busca_poe_o_audio_primeiro_e_os_clipes_por_ultimo():
         item("clipe111111", "Like a Stone (Official Video)"),
         item("hd111111111", "Like a Stone (HD)"),
         item("letra111111", "Like a Stone (Lyrics)"),
-        item("hd222222222", "Like a Stone (Live)"),
+        item("vivo1111111", "Like a Stone (Live)"),
+        item("hd222222222", "Like a Stone (Remastered)"),
     ]})
     ids = [r.id for r in buscar("like a stone", extrair=extrair)]
-    assert ids == ["letra111111", "hd111111111", "hd222222222", "clipe111111"]
+    assert ids == ["letra111111", "hd111111111", "hd222222222", "clipe111111", "vivo1111111"]
 
 
 def test_para_dict_traz_o_tipo():

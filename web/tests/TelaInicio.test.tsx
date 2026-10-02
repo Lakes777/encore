@@ -153,10 +153,11 @@ describe('busca', () => {
     expect(chamadas.adicionarNaFila).toHaveBeenCalledWith(expect.objectContaining({ modo: 'pronta' }))
   })
 
-  it('avisa nos clipes e marca o áudio da música', async () => {
+  it('avisa nos clipes e nas ao vivo e marca o áudio da música', async () => {
     chamadas.buscar.mockResolvedValue([
       resultado({ tipo: 'audio' }),
       resultado({ id: 'xxxxxxxxxxx', titulo: 'Help! (Official Video)', canal: 'The Beatles', tipo: 'clipe' }),
+      resultado({ id: 'yyyyyyyyyyy', titulo: 'Help! (Live)', canal: 'The Beatles', tipo: 'ao_vivo' }),
     ])
     await buscar()
     const audio = (await screen.findByRole('heading', { name: 'Help! (Remastered 2009)' })).closest('li')!
@@ -165,6 +166,10 @@ describe('busca', () => {
     expect(within(audio).queryByText(/Videoclipe/)).not.toBeInTheDocument()
     expect(within(clipe).getByText(/Videoclipe/)).toBeInTheDocument()
     expect(within(clipe).queryByText(/· áudio da música/)).not.toBeInTheDocument()
+    const aoVivo = screen.getByRole('heading', { name: 'Help! (Live)' }).closest('li')!
+    expect(within(aoVivo).getByText(/^Ao vivo:/)).toBeInTheDocument()
+    expect(within(aoVivo).queryByText(/Videoclipe/)).not.toBeInTheDocument()
+    expect(within(audio).queryByText(/^Ao vivo:/)).not.toBeInTheDocument()
   })
 
   it('não avisa sobre o modo Alta quando tem placa de vídeo', async () => {
