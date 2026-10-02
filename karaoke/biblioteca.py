@@ -12,6 +12,7 @@ ARQUIVO_DADOS = "musica.json"
 ARQUIVO_LETRA = "letra.lrc"
 DESFOQUE_PADRAO = 12  # pixels
 DESFOQUE_MAXIMO = 40
+ATRASO_MAXIMO = 10  # segundos que a letra pode ser deslocada, para frente ou para trás
 _ID = re.compile(r"^[0-9a-f]{12}$")  # mesmo formato dos ids que a fila cria
 
 
@@ -76,6 +77,7 @@ class Biblioteca:
         dados["tem_letra"] = True
         dados["letra_sincronizada"] = versos[0]["tempo"] is not None
         dados["letra_id"] = id_lrclib
+        dados.pop("atraso_letra", None)  # cada versão da letra tem o seu atraso: volta ao automático
         self._gravar(id_musica, dados)
         return versos
 
@@ -90,9 +92,23 @@ class Biblioteca:
         dados = self.obter(id_musica)
         (self._pasta_da(id_musica) / ARQUIVO_LETRA).unlink(missing_ok=True)
         dados["tem_letra"] = False
-        for campo in ("letra_sincronizada", "letra_id"):
+        for campo in ("letra_sincronizada", "letra_id", "atraso_letra"):
             dados.pop(campo, None)
         self._gravar(id_musica, dados)
+
+    def definir_atraso_letra(self, id_musica, atraso):
+        """Segundos somados aos tempos da letra (positivo = a voz vem depois); None = o site estima sozinho."""
+        if atraso is not None:
+            if isinstance(atraso, bool) or not isinstance(atraso, (int, float)) or not abs(atraso) <= ATRASO_MAXIMO:
+                raise ValueError(f"O atraso da letra precisa ficar entre -{ATRASO_MAXIMO} e {ATRASO_MAXIMO} segundos.")
+            atraso = round(float(atraso), 2)
+        dados = self.obter(id_musica)
+        if atraso is None:
+            dados.pop("atraso_letra", None)
+        else:
+            dados["atraso_letra"] = atraso
+        self._gravar(id_musica, dados)
+        return atraso
 
     # ---------- volumes ----------
 

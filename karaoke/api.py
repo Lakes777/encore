@@ -40,6 +40,10 @@ class PedidoVolumes(BaseModel):
     volumes: dict[str, float] = Field(max_length=50)
 
 
+class PedidoAtraso(BaseModel):
+    atraso: float | None = None  # None = automático
+
+
 class PedidoFundo(BaseModel):
     url: str | None = Field(default=None, max_length=2000)
     desfoque: int = Field(default=DESFOQUE_PADRAO, ge=0, le=DESFOQUE_MAXIMO)
@@ -188,6 +192,14 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
     def apagar_letra(id_musica: str):
         _musica_ou_404(id_musica)
         biblioteca.apagar_letra(id_musica)
+
+    @app.put("/api/musicas/{id_musica}/atraso-letra")
+    def atraso_letra(id_musica: str, pedido: PedidoAtraso):
+        _musica_ou_404(id_musica)
+        try:
+            return {"atraso": biblioteca.definir_atraso_letra(id_musica, pedido.atraso)}
+        except ValueError as erro:
+            raise HTTPException(422, str(erro)) from None
 
     @app.get("/api/musicas/{id_musica}/capas")
     def capas(id_musica: str):

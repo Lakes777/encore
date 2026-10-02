@@ -10,7 +10,7 @@ vi.mock('../src/logica/api.ts', async (original) => {
   const modulo = await original<typeof import('../src/logica/api.ts')>()
   return {
     ...modulo,
-    api: { musica: vi.fn(), letra: vi.fn(), definirFundo: vi.fn(), definirVolumes: vi.fn() },
+    api: { musica: vi.fn(), letra: vi.fn(), definirFundo: vi.fn(), definirVolumes: vi.fn(), definirAtrasoLetra: vi.fn() },
   }
 })
 
@@ -281,6 +281,42 @@ describe('letra', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Her Majesty is a pretty nice girl' }))
     expect(todosOsAudios().map((elemento) => elemento.currentTime)).toEqual([8, 8, 8, 8])
     expect(screen.getByRole('button', { name: 'Her Majesty is a pretty nice girl' })).toHaveAttribute('aria-current', 'true')
+  })
+
+  it('acerta a letra sozinha pelos trechos de voz, e o ajuste manual salva e volta ao automático', async () => {
+    vi.mocked(api.definirAtrasoLetra).mockImplementation(async (_id, atraso) => ({ atraso }))
+    const tempos = [2, 6, 10, 14, 18]
+    const letra = tempos.map((tempo, i) => ({ tempo, texto: `verso ${i + 1}` }))
+    // A voz entra meio segundo depois de cada verso da letra
+    await abrir(umaMusica({ trechos_voz: tempos.map((t) => [t + 0.5, t + 3] as [number, number]) }), letra)
+    liberarFaixas()
+    const valor = () => document.querySelector('.sincronia__valor')
+
+    expect(valor()).toHaveTextContent('+0,5 s')
+    expect(screen.getByText('(automático)')).toBeInTheDocument()
+    irPara(6.2) // a letra diz 6, mas a voz só entra em 6,5
+    expect(screen.getByRole('button', { name: 'verso 1' })).toHaveAttribute('aria-current', 'true')
+    irPara(6.6)
+    expect(screen.getByRole('button', { name: 'verso 2' })).toHaveAttribute('aria-current', 'true')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Atrasar a letra 0,1 segundo' }))
+    expect(api.definirAtrasoLetra).toHaveBeenLastCalledWith(ID, 0.6)
+    expect(valor()).toHaveTextContent('+0,6 s')
+    expect(screen.getByText('(ajustado)')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Voltar ao automático' }))
+    expect(api.definirAtrasoLetra).toHaveBeenLastCalledWith(ID, null)
+    expect(valor()).toHaveTextContent('+0,5 s')
+  })
+
+  it('usa o atraso salvo e desfaz o clique se não conseguir salvar', async () => {
+    vi.mocked(api.definirAtrasoLetra).mockRejectedValue(new ErroApi(0, 'O servidor do karaokê não respondeu.'))
+    await abrir(umaMusica({ atraso_letra: -1 }))
+    const valor = () => document.querySelector('.sincronia__valor')
+    expect(valor()).toHaveTextContent('−1 s')
+    await userEvent.click(screen.getByRole('button', { name: 'Adiantar a letra 0,1 segundo' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('não respondeu')
+    expect(valor()).toHaveTextContent('−1 s')
   })
 
   it('letra sem tempo aparece inteira, sem botões', async () => {

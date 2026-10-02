@@ -66,6 +66,10 @@ export const api = {
   definirVolumes: (id: string, volumes: Record<string, number>) =>
     pedir<Faixa[]>(`${daMusica(id)}/volumes`, { method: 'PUT', body: json({ volumes }) }),
 
+  /** null = volta ao automático. */
+  definirAtrasoLetra: (id: string, atraso: number | null) =>
+    pedir<{ atraso: number | null }>(`${daMusica(id)}/atraso-letra`, { method: 'PUT', body: json({ atraso }) }),
+
   capas: (id: string) => pedir<Capa[]>(`${daMusica(id)}/capas`),
   definirFundo: (id: string, fundo: Fundo) => pedir<Fundo>(`${daMusica(id)}/fundo`, { method: 'PUT', body: json(fundo) }),
 }

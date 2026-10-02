@@ -183,6 +183,30 @@ def test_salvar_letra_marca_a_musica(tmp_path):
         biblioteca.letra(ID_MUSICA)
 
 
+def test_atraso_da_letra_e_salvo_e_volta_ao_automatico_com_outra_letra(tmp_path):
+    musica_salva(tmp_path)
+    biblioteca = Biblioteca(tmp_path)
+    biblioteca.salvar_letra(ID_MUSICA, LRC_HELP, 31647304)
+    assert biblioteca.definir_atraso_letra(ID_MUSICA, 0.554) == 0.55
+    assert biblioteca.obter(ID_MUSICA)["atraso_letra"] == 0.55
+    biblioteca.salvar_letra(ID_MUSICA, LRC_HELP, 99)  # outra versão da letra
+    assert "atraso_letra" not in biblioteca.obter(ID_MUSICA)
+
+    biblioteca.definir_atraso_letra(ID_MUSICA, -1)
+    assert biblioteca.definir_atraso_letra(ID_MUSICA, None) is None
+    assert "atraso_letra" not in biblioteca.obter(ID_MUSICA)
+    biblioteca.definir_atraso_letra(ID_MUSICA, 2)
+    biblioteca.apagar_letra(ID_MUSICA)
+    assert "atraso_letra" not in biblioteca.obter(ID_MUSICA)
+
+
+@pytest.mark.parametrize("atraso", [10.5, -11, True, float("nan")])
+def test_atraso_fora_do_limite_e_recusado(tmp_path, atraso):
+    musica_salva(tmp_path)
+    with pytest.raises(ValueError):
+        Biblioteca(tmp_path).definir_atraso_letra(ID_MUSICA, atraso)
+
+
 def test_letra_vazia_nao_e_salva(tmp_path):
     musica_salva(tmp_path)
     with pytest.raises(ValueError):
@@ -242,6 +266,17 @@ def test_rotas_de_capa_e_fundo(tmp_path):
     assert api.get(f"/api/musicas/{ID_MUSICA}").json()["fundo"]["desfoque"] == 20
     assert api.put(f"/api/musicas/{ID_MUSICA}/fundo", json={"url": "http://x/a.jpg"}).status_code == 422
     assert api.put(f"/api/musicas/{ID_MUSICA}/fundo", json={"desfoque": 99}).status_code == 422
+
+
+def test_rota_do_atraso_da_letra(tmp_path):
+    musica_salva(tmp_path)
+    api, _ = cliente(tmp_path, {})
+    assert api.put(f"/api/musicas/{ID_MUSICA}/atraso-letra", json={"atraso": 0.5}).json() == {"atraso": 0.5}
+    assert api.get(f"/api/musicas/{ID_MUSICA}").json()["atraso_letra"] == 0.5
+    assert api.put(f"/api/musicas/{ID_MUSICA}/atraso-letra", json={"atraso": None}).json() == {"atraso": None}
+    assert "atraso_letra" not in api.get(f"/api/musicas/{ID_MUSICA}").json()
+    assert api.put(f"/api/musicas/{ID_MUSICA}/atraso-letra", json={"atraso": 60}).status_code == 422
+    assert api.put("/api/musicas/naoexiste/atraso-letra", json={"atraso": 1}).status_code == 404
 
 
 def test_rotas_de_musica_inexistente_dao_404(tmp_path):

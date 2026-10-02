@@ -92,6 +92,13 @@ export interface Musica {
   versao_pronta?: VersaoPronta
   aviso?: string
   faixas: Faixa[]
+  /** Segundos somados aos tempos da letra, salvos pelo usuário (ausente = automático). */
+  atraso_letra?: number
+  bpm?: number | null
+  /** Segundos de cada batida (para o metrônomo). */
+  batidas?: number[]
+  /** [início, fim] em segundos onde a voz principal soa (não existe na versão pronta). */
+  trechos_voz?: [number, number][]
 }
 
 export interface VersaoPronta {

@@ -18,3 +18,10 @@ export function formatarEstimativa(segundos: number | null | undefined) {
 export function descricaoTom(musica: Pick<Musica, 'tom' | 'escala'>) {
   return musica.tom && musica.escala ? `${musica.tom} ${musica.escala}` : 'tom desconhecido'
 }
+
+/** "+0,55 s", "−1,2 s", "0 s": quanto a letra foi deslocada. */
+export function formatarAtraso(segundos: number) {
+  if (!segundos) return '0 s'
+  const numero = Math.abs(segundos).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+  return `${segundos > 0 ? '+' : '−'}${numero} s`
+}

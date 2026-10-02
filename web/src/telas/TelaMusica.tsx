@@ -1,11 +1,13 @@
 import { ArrowLeft, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw } from 'lucide-react'
-import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { ControleDesfoque } from '../componentes/ControleDesfoque.tsx'
 import { Letra } from '../componentes/Letra.tsx'
+import { SincroniaLetra } from '../componentes/SincroniaLetra.tsx'
 import { Velocidade } from '../componentes/Velocidade.tsx'
 import { Volumes } from '../componentes/Volumes.tsx'
 import { api, ErroApi, urlDaFaixa } from '../logica/api.ts'
 import { descricaoTom, formatarDuracao } from '../logica/formatar.ts'
+import { deslocarVersos, estimarAtraso, letraSincronizada } from '../logica/letra.ts'
 import { LINK_INICIO } from '../logica/rota.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import { DESFOQUE_PADRAO, type Musica, type Verso } from '../logica/tipos.ts'
@@ -82,6 +84,14 @@ function focoEmCampo(alvo: EventTarget | null) {
 function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[] | null; erroLetra: string | null }) {
   const { faixas } = musica
   const [velocidade, setVelocidade] = useState(1)
+  const sincronizada = versos != null && letraSincronizada(versos)
+  const estimado = useMemo(
+    () => (sincronizada && versos ? estimarAtraso(versos, musica.trechos_voz ?? []) : null),
+    [sincronizada, versos, musica.trechos_voz],
+  )
+  const [atrasoSalvo, setAtrasoSalvo] = useState<number | null>(musica.atraso_letra ?? null)
+  const atraso = atrasoSalvo ?? estimado ?? 0
+  const versosNoTempo = useMemo(() => (versos ? deslocarVersos(versos, atraso) : null), [versos, atraso])
   const player = usePlayer(faixas, musica.duracao, velocidade)
   const [volumes, setVolumes] = useState(() => estadoInicialDosVolumes(faixas))
   const salvamento = useSalvarVolumes(musica.id, faixas, volumes.volumes)
@@ -164,7 +174,7 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
       <div className="tela-musica__corpo">
         <section className="tela-musica__letra" aria-label="Letra da música">
           {versos && versos.length > 0 ? (
-            <Letra versos={versos} tempo={tempo} aoPular={player.pular} />
+            <Letra versos={versosNoTempo ?? versos} tempo={tempo} aoPular={player.pular} />
           ) : (
             <div className="tela-musica__sem-letra">
               <p>{erroLetra ?? 'Essa música ainda não tem letra.'}</p>
@@ -184,6 +194,9 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
             </p>
           )}
           <Velocidade velocidade={velocidade} aoMudar={setVelocidade} />
+          {sincronizada && (
+            <SincroniaLetra idMusica={musica.id} atrasoSalvo={atrasoSalvo} estimado={estimado} aoMudar={setAtrasoSalvo} />
+          )}
           {urlFundo && (
             <ControleDesfoque idMusica={musica.id} url={urlFundo} desfoque={desfoque} aoMudar={setDesfoque} />
           )}
