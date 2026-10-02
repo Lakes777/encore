@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, ErroApi, urlDaFaixa } from '../src/logica/api.ts'
 import { descricaoTom, formatarDuracao, formatarEstimativa } from '../src/logica/formatar.ts'
 import { lerRota, linkDaMusica } from '../src/logica/rota.ts'
+import { ajustarVelocidade } from '../src/logica/velocidade.ts'
 
 describe('rota', () => {
   it('lê a tela da música pelo hash', () => {
@@ -64,5 +65,16 @@ describe('api', () => {
 
   it('endereço da faixa', () => {
     expect(urlDaFaixa('abcdef123456', 'voz principal.wav')).toBe('/api/musicas/abcdef123456/faixas/voz%20principal.wav')
+  })
+})
+
+describe('velocidade', () => {
+  it('prende entre 50% e 150% e arredonda de 5 em 5', () => {
+    expect(ajustarVelocidade(0.85)).toBe(0.85)
+    expect(ajustarVelocidade(0.8500000001)).toBe(0.85)
+    expect(ajustarVelocidade(0.87)).toBe(0.85)
+    expect(ajustarVelocidade(0.1)).toBe(0.5)
+    expect(ajustarVelocidade(3)).toBe(1.5)
+    expect(ajustarVelocidade(Number.NaN)).toBe(1)
   })
 })

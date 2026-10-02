@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react'
 import { faixasParaCorrigir, indiceDoMestre } from './sincronia.ts'
 import type { Faixa } from './tipos.ts'
+import { aplicarVelocidade } from './velocidade.ts'
 
 /**
  * Player de várias faixas tocando juntas, uma <audio> por faixa.
@@ -8,8 +9,9 @@ import type { Faixa } from './tipos.ts'
  * Por que <audio> e não Web Audio (AudioBuffer)?
  *  - O <audio> lê o WAV aos poucos do servidor (a rota aceita Range): não precisa
  *    baixar e decodificar a música inteira na RAM, o que com 4+ faixas de WAV pesa.
- *  - No futuro dá para mudar a velocidade sem mudar o tom com playbackRate +
- *    preservesPitch, que o navegador já faz.
+ *  - Dá para mudar a velocidade sem mudar o tom com playbackRate + preservesPitch,
+ *    que o navegador já faz. O tempo (currentTime) continua sendo o da música,
+ *    então a letra e o resto seguem a velocidade sem conta nenhuma.
  * O preço é que cada <audio> tem seu próprio relógio. Por isso há um relógio mestre
  * (a primeira faixa que não é a original) e um laço que puxa as outras de volta
  * quando elas se afastam dele (regra em sincronia.ts).
@@ -19,7 +21,7 @@ export function carregado(audio: HTMLMediaElement) {
   return !audio.seeking && audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
 }
 
-export function usePlayer(faixas: readonly Faixa[], duracaoConhecida: number | null) {
+export function usePlayer(faixas: readonly Faixa[], duracaoConhecida: number | null, velocidade = 1) {
   const audios = useRef<(HTMLAudioElement | null)[]>([])
   const indiceMestre = indiceDoMestre(faixas)
   const [tocando, setTocando] = useState(false)
@@ -59,6 +61,11 @@ export function usePlayer(faixas: readonly Faixa[], duracaoConhecida: number | n
     quadro = requestAnimationFrame(passo)
     return () => cancelAnimationFrame(quadro)
   }, [tocando, indiceMestre])
+
+  // Todas as faixas na mesma velocidade, senão a sincronia ficaria corrigindo o tempo todo
+  useEffect(() => {
+    for (const audio of audios.current) if (audio) aplicarVelocidade(audio, velocidade)
+  }, [velocidade, faixas])
 
   // Saiu da tela: para tudo (o elemento some, mas melhor não depender disso).
   useEffect(() => {

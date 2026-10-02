@@ -236,6 +236,27 @@ describe('volumes', () => {
   })
 })
 
+describe('velocidade', () => {
+  it('muda a velocidade de todas as faixas sem mudar o tom e volta ao normal', async () => {
+    await abrir()
+    const normal = screen.getByRole('button', { name: 'Normal' })
+    expect(normal).toBeDisabled()
+    for (const elemento of todosOsAudios()) expect(elemento.playbackRate).toBe(1)
+
+    fireEvent.change(screen.getByRole('slider', { name: 'Velocidade da música' }), { target: { value: '75' } })
+    expect(screen.getByText('75%')).toBeInTheDocument()
+    for (const elemento of todosOsAudios()) {
+      expect(elemento.playbackRate).toBe(0.75)
+      expect(elemento.defaultPlaybackRate).toBe(0.75)
+      expect(elemento.preservesPitch).toBe(true)
+    }
+
+    await userEvent.click(normal)
+    for (const elemento of todosOsAudios()) expect(elemento.playbackRate).toBe(1)
+    expect(normal).toBeDisabled()
+  })
+})
+
 describe('letra', () => {
   it('sem letra mostra o aviso com o link para escolher', async () => {
     await abrir(umaMusica({ tem_letra: false }), new ErroApi(404, 'Essa música não tem letra.'))

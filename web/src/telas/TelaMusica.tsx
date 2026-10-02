@@ -2,6 +2,7 @@ import { ArrowLeft, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw } from 
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { ControleDesfoque } from '../componentes/ControleDesfoque.tsx'
 import { Letra } from '../componentes/Letra.tsx'
+import { Velocidade } from '../componentes/Velocidade.tsx'
 import { Volumes } from '../componentes/Volumes.tsx'
 import { api, ErroApi, urlDaFaixa } from '../logica/api.ts'
 import { descricaoTom, formatarDuracao } from '../logica/formatar.ts'
@@ -80,7 +81,8 @@ function focoEmCampo(alvo: EventTarget | null) {
 
 function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[] | null; erroLetra: string | null }) {
   const { faixas } = musica
-  const player = usePlayer(faixas, musica.duracao)
+  const [velocidade, setVelocidade] = useState(1)
+  const player = usePlayer(faixas, musica.duracao, velocidade)
   const [volumes, setVolumes] = useState(() => estadoInicialDosVolumes(faixas))
   const salvamento = useSalvarVolumes(musica.id, faixas, volumes.volumes)
   const [desfoque, setDesfoque] = useState(() => musica.fundo?.desfoque ?? DESFOQUE_PADRAO)
@@ -181,6 +183,7 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
               {salvamento.erro}
             </p>
           )}
+          <Velocidade velocidade={velocidade} aoMudar={setVelocidade} />
           {urlFundo && (
             <ControleDesfoque idMusica={musica.id} url={urlFundo} desfoque={desfoque} aoMudar={setDesfoque} />
           )}
