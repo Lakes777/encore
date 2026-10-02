@@ -11,6 +11,14 @@ a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra
 > **Atenção:** projeto de estudo, para uso pessoal e local. Baixar áudio do YouTube vai
 > contra os termos de uso da plataforma, por isso o app não é hospedado publicamente.
 
+![Tela inicial: busca e a lista de músicas prontas, cada uma com capa, título limpo, tom e botões de prévia, letra, fundo, exportar e apagar](docs/inicio.png)
+
+![Tela da música: letra sincronizada no centro, painel com as abas Volumes, Treino e Ajustes, e o player embaixo](docs/musica.png)
+
+<p align="center">
+  <img src="docs/celular.png" alt="Tela da música no celular: letra livre e os controles numa gaveta fechada" width="260">
+</p>
+
 ## Como vai funcionar
 
 1. Buscar a música pelo nome ou colando o link do YouTube, com uma prévia curta de cada resultado.
