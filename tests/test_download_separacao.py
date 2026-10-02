@@ -1,15 +1,22 @@
+import os
+import subprocess
 import tempfile
+import time
+from pathlib import Path
 
 import pytest
 
 from karaoke.download import baixar_audio
-from karaoke.faixas import INSTRUMENTAL, VOCAIS_DE_APOIO, VOZ_PRINCIPAL
+from karaoke.cancelamento import Cancelada
+from karaoke.faixas import INSTRUMENTAL, VOCAIS_DE_APOIO, VOZ_PRINCIPAL, Faixa
 from karaoke.separacao import (
     MODOS,
+    detectar_dispositivo,
     estimar_segundos,
     modo_padrao,
     obter_modo,
     separar,
+    separar_em_processo,
 )
 
 # ---------- download ----------
@@ -153,6 +160,22 @@ def test_recusa_modo_desconhecido():
 # ---------- escolha do modo e estimativa ----------
 
 
+@pytest.mark.parametrize("saida, codigo, esperado", [("True\n", 0, "cuda"), ("False\n", 0, "cpu"), ("", 1, "cpu")])
+def test_detecta_a_placa_num_processo_a_parte(saida, codigo, esperado):
+    def rodar(comando, **opcoes):
+        assert "torch.cuda.is_available()" in comando[-1]
+        return subprocess.CompletedProcess(comando, codigo, saida, "")
+
+    assert detectar_dispositivo(rodar) == esperado
+
+
+def test_sem_python_para_perguntar_fica_na_cpu():
+    def rodar(comando, **opcoes):
+        raise subprocess.TimeoutExpired(comando, 120)
+
+    assert detectar_dispositivo(rodar) == "cpu"
+
+
 def test_modo_padrao_depende_da_placa_de_video():
     assert modo_padrao("cuda") == "qualidade"
     assert modo_padrao("cpu") == "rapido"
@@ -167,3 +190,58 @@ def test_estimativa_na_cpu_usa_o_que_foi_medido():
 def test_sem_medicao_ou_sem_duracao_nao_estima():
     assert estimar_segundos("qualidade", "cuda", 240) is None  # GPU ainda não medida
     assert estimar_segundos("rapido", "cpu", None) is None
+
+
+# ---------- separar num processo à parte ----------
+# Os "filhos" falsos ficam no nível do módulo: com spawn, o processo filho importa este arquivo.
+
+
+def filho_que_separa(mensagens, audio, pasta, nome_modo, pasta_modelos):
+    mensagens.put(("etapa", (1, 2)))
+    mensagens.put(("etapa", (2, 2)))
+    mensagens.put(("pronto", [Faixa(INSTRUMENTAL, f"{nome_modo}.wav")]))
+
+
+def filho_com_erro(mensagens, *args):
+    mensagens.put(("erro", "modelo não encontrado"))
+
+
+def filho_que_morre(mensagens, *args):
+    os._exit(9)  # como o kernel matando por falta de memória: sai sem mandar nada
+
+
+def filho_demorado(mensagens, audio, pasta, *args):
+    (Path(pasta) / "pid").write_text(str(os.getpid()))
+    mensagens.put(("etapa", (1, 2)))
+    time.sleep(60)
+
+
+def test_processo_avisa_as_etapas_e_devolve_as_faixas(tmp_path):
+    etapas = []
+    faixas = separar_em_processo(tmp_path / "a.wav", tmp_path, "rapido", "modelos",
+                                 lambda numero, total: etapas.append(numero), alvo=filho_que_separa)
+    assert etapas == [1, 2]
+    assert faixas == [Faixa(INSTRUMENTAL, "rapido.wav")]
+
+
+def test_erro_no_processo_vira_erro_com_o_texto(tmp_path):
+    with pytest.raises(RuntimeError, match="modelo não encontrado"):
+        separar_em_processo(tmp_path / "a.wav", tmp_path, alvo=filho_com_erro)
+
+
+def test_processo_que_morre_sem_avisar_vira_erro(tmp_path):
+    with pytest.raises(RuntimeError, match="parou no meio"):
+        separar_em_processo(tmp_path / "a.wav", tmp_path, alvo=filho_que_morre)
+
+
+def test_cancelar_encerra_o_processo(tmp_path):
+    def verificar():
+        if (tmp_path / "pid").exists():
+            raise Cancelada()
+
+    inicio = time.monotonic()
+    with pytest.raises(Cancelada):
+        separar_em_processo(tmp_path / "a.wav", tmp_path, verificar=verificar, alvo=filho_demorado)
+    assert time.monotonic() - inicio < 30
+    with pytest.raises(ProcessLookupError):  # o filho não existe mais
+        os.kill(int((tmp_path / "pid").read_text()), 0)

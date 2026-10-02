@@ -2,7 +2,7 @@ import { X } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../logica/api.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
-import { nomeDoModo, podeRemover, TEXTO_DO_ESTADO } from '../logica/fila.ts'
+import { nomeDoModo, rodando, TEXTO_DO_ESTADO } from '../logica/fila.ts'
 import type { Sistema, Tarefa } from '../logica/tipos.ts'
 
 interface Props {
@@ -10,16 +10,23 @@ interface Props {
   sistema: Sistema | null
   /** Chamado com o id da tarefa que saiu da fila. */
   aoRemover: (id: string) => void
+  /** Chamado com o id da tarefa que pode estar parando: a próxima consulta à fila diz se ela já sumiu. */
+  aoCancelar: (id: string) => void
 }
 
-export function Fila({ tarefas, sistema, aoRemover }: Props) {
+export function Fila({ tarefas, sistema, aoRemover, aoCancelar }: Props) {
   const [erro, setErro] = useState('')
 
   async function remover(tarefa: Tarefa) {
+    const cancelar = rodando(tarefa.estado)
+    if (cancelar && !window.confirm(`Cancelar "${tarefa.titulo}"? O que já foi baixado ou separado será apagado.`)) return
     setErro('')
     try {
       await api.esquecerTarefa(tarefa.id)
-      aoRemover(tarefa.id)
+      // A tela pode estar atrasada: "na fila" aqui e já baixando no servidor (que então cancela).
+      // Só some na hora o que com certeza já tinha terminado; o resto fica até a consulta.
+      if (tarefa.estado === 'pronta' || tarefa.estado === 'erro') aoRemover(tarefa.id)
+      else aoCancelar(tarefa.id)
     } catch (falha) {
       setErro(mensagemDoErro(falha))
     }
@@ -45,12 +52,12 @@ export function Fila({ tarefas, sistema, aoRemover }: Props) {
                     <span className="tarefa__estado">{TEXTO_DO_ESTADO[tarefa.estado]}</span> · {porcento}% · {nomeDoModo(tarefa.modo, sistema)}
                   </p>
                 </div>
-                {podeRemover(tarefa.estado) && (
+                {tarefa.estado !== 'cancelando' && (
                   <button
                     type="button"
                     className="botao botao--icone botao--perigo"
-                    aria-label={`Tirar ${tarefa.titulo} da fila`}
-                    title="Tirar da fila"
+                    aria-label={rodando(tarefa.estado) ? `Cancelar ${tarefa.titulo}` : `Tirar ${tarefa.titulo} da fila`}
+                    title={rodando(tarefa.estado) ? 'Cancelar' : 'Tirar da fila'}
                     onClick={() => remover(tarefa)}
                   >
                     <X size={18} aria-hidden />

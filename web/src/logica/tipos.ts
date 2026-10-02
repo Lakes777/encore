@@ -34,6 +34,7 @@ export type EstadoTarefa =
   | 'analisando'
   | 'pronta'
   | 'erro'
+  | 'cancelando'
 
 export interface Tarefa {
   id: string

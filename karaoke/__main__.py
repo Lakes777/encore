@@ -20,11 +20,11 @@ PASTA_SITE = Path(__file__).resolve().parent.parent / "web" / "dist"
 def main():
     pasta_dados = os.environ.get("KARAOKE_DADOS", "dados")
     # Sem versão pronta, separa com o melhor modo que o computador aguenta
-    fila = Fila(pasta_dados, os.environ.get("KARAOKE_MODELOS", "modelos"),
-                modo_reserva=modo_padrao(detectar_dispositivo()))
+    dispositivo = detectar_dispositivo()
+    fila = Fila(pasta_dados, os.environ.get("KARAOKE_MODELOS", "modelos"), modo_reserva=modo_padrao(dispositivo))
     fila.iniciar()
     # Só no próprio computador (127.0.0.1): o app não deve ficar aberto na rede
-    uvicorn.run(criar_app(pasta_dados, fila, pasta_site=PASTA_SITE), host="127.0.0.1", port=int(os.environ.get("PORT", "8000")))
+    uvicorn.run(criar_app(pasta_dados, fila, dispositivo=dispositivo, pasta_site=PASTA_SITE), host="127.0.0.1", port=int(os.environ.get("PORT", "8000")))
 
 
 if __name__ == "__main__":

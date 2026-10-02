@@ -6,7 +6,7 @@ Karaokê que roda no próprio computador: você busca uma música do YouTube, o 
 a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra a
 **letra sincronizada** enquanto a música toca, com um volume para cada faixa.
 
-> **Em desenvolvimento.** A parte de trás (busca, download, separação, tom e fila) e a API já funcionam; faltam as telas.
+> **Em desenvolvimento.** A fase 1 (karaokê) e a fase 2 (versões prontas) já funcionam; as próximas fases são guitarra e instrumentos.
 
 > **Atenção:** projeto de estudo, para uso pessoal e local. Baixar áudio do YouTube vai
 > contra os termos de uso da plataforma, por isso o app não é hospedado publicamente.
@@ -173,6 +173,7 @@ Fase 1: karaokê
 - [x] Separar em pedaços de 60 s: o pico de RAM fica em ~3,1 GB qualquer que seja a duração (Help! inteira, 2:19, em 9 min na CPU)
 - [x] Telas (React): busca com prévia e seletor Rápida/Alta, fila, lista, tela da música (letra sincronizada, volumes, tocar a original, tela cheia, fundo com desfoque)
 - [x] Salvar os volumes de cada música (a tela salva sozinha, 0,7 s depois da última mudança)
+- [x] Cancelar a música que está sendo preparada (a separação roda num processo à parte, que é encerrado)
 - [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 
 Fase 2: versões prontas

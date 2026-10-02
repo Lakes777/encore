@@ -28,6 +28,7 @@ from pathlib import Path
 import numpy as np
 
 from karaoke.busca import buscar as buscar_no_youtube
+from karaoke.cancelamento import Cancelada
 from karaoke.download import baixar_audio
 from karaoke.faixas import INSTRUMENTAL, Faixa
 from karaoke.letras import limpar_titulo, sem_enfeites
@@ -262,7 +263,8 @@ def preparar_versao_pronta(original, pasta, titulo, artista, duracao, id_origina
                            alinhar=_alinhar_arquivo):
     """Procura, compara e alinha. Devolve uma VersaoPronta ou None se nenhuma serviu.
 
-    `ao_progredir(fracao)` vai de 0 a 1 conforme os candidatos são conferidos.
+    `ao_progredir(fracao)` vai de 0 a 1 conforme os candidatos são conferidos; também é
+    chamado durante cada download, e pode levantar Cancelada para parar tudo.
     O instrumental fica em pasta/instrumental.wav; os candidatos baixados são apagados.
     """
     avisar = ao_progredir or (lambda fracao: None)
@@ -270,15 +272,21 @@ def preparar_versao_pronta(original, pasta, titulo, artista, duracao, id_origina
     candidatos = procurar_candidatos(titulo, artista, duracao, id_original, buscar)
     if not candidatos:
         return None
+    avisar(0.0)  # cada aviso também é uma chance de cancelar: a busca e o cromagrama levam segundos
     referencia = cromagrama(original)
     temporarios = pasta / "candidatos"
     aceitos = []
     try:
         for numero, candidato in enumerate(candidatos):
-            avisar(numero / len(candidatos))
+            fracao = numero / len(candidatos)
+            avisar(fracao)
             try:
-                audio = baixar(candidato.id, temporarios / candidato.id)
-                comparacao = comparar(referencia, cromagrama(audio))
+                audio = baixar(candidato.id, temporarios / candidato.id, lambda _: avisar(fracao))
+                croma = cromagrama(audio)
+                avisar(fracao)
+                comparacao = comparar(referencia, croma)
+            except Cancelada:
+                raise
             except Exception:
                 continue  # vídeo indisponível ou áudio estragado: tenta o próximo
             if comparacao is not None and comparacao.aceitavel:

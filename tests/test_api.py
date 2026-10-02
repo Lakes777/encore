@@ -1,4 +1,5 @@
 import json
+import threading
 
 import pytest
 from fastapi.testclient import TestClient
@@ -90,6 +91,35 @@ def test_esquecer_tarefa(pasta):
     tarefa = api.post("/api/fila", json={"id_video": "2Q_ZzBGPdqE", "titulo": "Help!"}).json()
     assert api.delete(f"/api/fila/{tarefa['id']}").status_code == 204
     assert api.delete(f"/api/fila/{tarefa['id']}").status_code == 404
+
+
+def test_cancelar_tarefa_rodando(pasta):
+    comecou, soltar = threading.Event(), threading.Event()
+
+    def baixar(id_video, pasta_musica, ao_progredir):
+        pasta_musica.mkdir(parents=True)
+        (pasta_musica / "original.wav").write_bytes(b"x")
+        return pasta_musica / "original.wav"
+
+    def separar(audio, pasta_musica, modo, pasta_modelos, ao_mudar_etapa, verificar):
+        comecou.set()
+        soltar.wait(5)
+        verificar()  # como a separação de verdade, que confere a cada meio segundo
+        raise AssertionError("devia ter sido cancelada")
+
+    fila = Fila(pasta, baixar=baixar, separar=separar)
+    api = TestClient(criar_app(pasta, fila, None, "cpu"))
+    tarefa = api.post("/api/fila", json={"id_video": "2Q_ZzBGPdqE", "titulo": "Help!"}).json()
+    trabalho = threading.Thread(target=fila.processar_proxima)
+    trabalho.start()
+    assert comecou.wait(5)
+
+    assert api.delete(f"/api/fila/{tarefa['id']}").status_code == 204
+    assert [t["estado"] for t in api.get("/api/fila").json()] == ["cancelando"]
+    soltar.set()
+    trabalho.join(5)
+    assert api.get("/api/fila").json() == []
+    assert not (pasta / tarefa["id"]).exists()
 
 
 def test_lista_obtem_e_apaga_musicas(pasta):

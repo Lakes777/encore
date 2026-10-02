@@ -11,7 +11,11 @@ O audio-separator usa a GPU sozinho quando o PyTorch enxerga CUDA. Aqui só
 detectamos o dispositivo para escolher o modo padrão e estimar o tempo.
 """
 
+import multiprocessing
+import queue
 import shutil
+import subprocess
+import sys
 import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -61,13 +65,18 @@ _FORMATO = "wav"
 PEDACO_SEGUNDOS = 60
 
 
-def detectar_dispositivo():
-    """'cuda' se o PyTorch enxerga uma placa NVIDIA, senão 'cpu'."""
+def detectar_dispositivo(rodar=subprocess.run):
+    """'cuda' se o PyTorch enxerga uma placa NVIDIA, senão 'cpu'.
+
+    Pergunta num processo à parte: importar o torch ocupa centenas de MB que o
+    servidor carregaria à toa, já que quem separa é o processo filho.
+    """
     try:
-        import torch
-    except ImportError:
+        resposta = rodar([sys.executable, "-c", "import torch; print(torch.cuda.is_available())"],
+                         capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError):
         return "cpu"
-    return "cuda" if torch.cuda.is_available() else "cpu"
+    return "cuda" if resposta.returncode == 0 and resposta.stdout.strip() == "True" else "cpu"
 
 
 def modo_padrao(dispositivo):
@@ -155,3 +164,62 @@ def separar(audio, pasta, nome_modo="rapido", pasta_modelos="modelos", ao_mudar_
         Faixa(VOCAIS_DE_APOIO, etapa_2["Instrumental"].name),
         Faixa(INSTRUMENTAL, etapa_1["Instrumental"].name),
     ]
+
+
+# ---------- separar num processo à parte (para poder cancelar) ----------
+
+_ESPERA = 0.5  # segundos entre uma checagem de cancelamento e outra
+
+
+def _separar_no_filho(mensagens, audio, pasta, nome_modo, pasta_modelos):
+    try:
+        faixas = separar(audio, pasta, nome_modo, pasta_modelos,
+                         lambda numero, total: mensagens.put(("etapa", (numero, total))))
+    except Exception as erro:  # a exceção em si pode não passar entre processos; o texto passa
+        mensagens.put(("erro", str(erro) or type(erro).__name__))
+    else:
+        mensagens.put(("pronto", faixas))
+
+
+def separar_em_processo(audio, pasta, nome_modo="rapido", pasta_modelos="modelos", ao_mudar_etapa=None,
+                        verificar=None, alvo=_separar_no_filho):
+    """Igual a separar(), mas num processo filho que é encerrado se `verificar()` levantar exceção.
+
+    Uma thread não dá para interromper no meio do modelo; um processo dá. `verificar`
+    é chamado a cada meio segundo (a fila levanta Cancelada por ele). Usa "spawn":
+    o filho começa limpo, sem copiar as threads do servidor.
+    """
+    avisar = ao_mudar_etapa or (lambda numero, total: None)
+    verificar = verificar or (lambda: None)
+    contexto = multiprocessing.get_context("spawn")
+    mensagens = contexto.Queue()
+    processo = contexto.Process(target=alvo, args=(mensagens, str(audio), str(pasta), nome_modo, str(pasta_modelos)),
+                                name="separacao-karaoke")
+    processo.start()
+    try:
+        while True:
+            try:
+                tipo, dado = mensagens.get(timeout=_ESPERA)
+            except queue.Empty:
+                verificar()
+                if not processo.is_alive():
+                    try:  # pode ter mandado a resposta logo antes de sair
+                        tipo, dado = mensagens.get(timeout=_ESPERA)
+                    except queue.Empty:
+                        raise RuntimeError("A separação parou no meio (faltou memória?).") from None
+                else:
+                    continue
+            if tipo == "etapa":
+                avisar(*dado)
+            elif tipo == "erro":
+                raise RuntimeError(dado)
+            else:
+                return dado
+    finally:
+        if processo.is_alive():
+            processo.terminate()
+        processo.join(5)
+        if processo.is_alive():
+            processo.kill()
+            processo.join()
+        mensagens.close()

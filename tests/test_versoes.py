@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from karaoke.busca import Resultado
+from karaoke.cancelamento import Cancelada
 from karaoke.faixas import INSTRUMENTAL
 from karaoke.versoes import (
     DIFERENCA_DE_DURACAO,
@@ -184,8 +185,9 @@ class Cenario:
     def buscar(self, texto, limite):
         return [resultado(id_) for id_ in self.cromas if id_ != "orig"] if texto.endswith("instrumental") else []
 
-    def baixar(self, id_video, pasta):
+    def baixar(self, id_video, pasta, ao_progredir):
         self.baixados.append(id_video)
+        ao_progredir(0.5)
         if id_video.startswith("quebrado"):
             raise RuntimeError("vídeo indisponível")
         pasta.mkdir(parents=True)
@@ -201,12 +203,13 @@ class Cenario:
         self.alinhado = (entrada.parent.name, comparacao)
         saida.write_bytes(b"alinhado")
 
-    def preparar(self):
+    def preparar(self, ao_progredir=None):
         original = self.tmp_path / "original.wav"
         original.write_bytes(b"x")
         progresso = []
         versao = preparar_versao_pronta(original, self.tmp_path, "Help!", "The Beatles", 140, "orig".ljust(11, "x"),
-                                        progresso.append, self.buscar, self.baixar, self.cromagrama, self.alinhar)
+                                        ao_progredir or progresso.append, self.buscar, self.baixar, self.cromagrama,
+                                        self.alinhar)
         return versao, progresso
 
 
@@ -238,6 +241,19 @@ def test_nenhuma_serviu(tmp_path):
     versao, _ = cenario.preparar()
     assert versao is None
     assert not (tmp_path / "instrumental.wav").exists()
+    assert not (tmp_path / "candidatos").exists()
+
+
+def test_cancelar_no_meio_de_um_download_para_tudo(tmp_path):
+    cenario = Cenario(tmp_path, {"orig": musica(), "outra": musica(semente=9), "mais": musica(semente=3)})
+
+    def ao_progredir(fracao):
+        if cenario.baixados:  # o 1º download começou
+            raise Cancelada()
+
+    with pytest.raises(Cancelada):  # não pode virar "vídeo indisponível, tenta o próximo"
+        cenario.preparar(ao_progredir)
+    assert cenario.baixados == ["outra".ljust(11, "x")]
     assert not (tmp_path / "candidatos").exists()
 
 

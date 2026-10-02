@@ -225,8 +225,9 @@ describe('fila', () => {
     expect(within(fila).getByText('Separando as vozes')).toBeInTheDocument()
     expect(within(fila).getByText(/45% · Alta/)).toBeInTheDocument()
     expect(within(fila).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '45')
-    // Rodando: não dá para tirar
+    // Rodando: o X cancela em vez de tirar
     expect(within(fila).queryByRole('button', { name: /Tirar/ })).not.toBeInTheDocument()
+    expect(within(fila).getByRole('button', { name: 'Cancelar Help!' })).toBeInTheDocument()
     expect(chamadas.musicas).toHaveBeenCalledTimes(1)
 
     await esperar(1500)
@@ -296,13 +297,38 @@ describe('fila', () => {
     expect(screen.getByText('Yesterday')).toBeInTheDocument()
   })
 
-  it('mostra a mensagem quando o backend recusa (409)', async () => {
+  it('cancela a música que está sendo preparada, depois de confirmar', async () => {
+    chamadas.fila
+      .mockResolvedValueOnce([tarefa({ estado: 'separando', progresso: 0.3 })])
+      .mockResolvedValueOnce([tarefa({ estado: 'cancelando', progresso: 0.3 })])
+    chamadas.esquecerTarefa.mockResolvedValue(undefined)
+    const confirmar = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+    const usuario = userEvent.setup()
+    render(<TelaInicio />)
+
+    const cancelar = await screen.findByRole('button', { name: 'Cancelar Help!' })
+    await usuario.click(cancelar)
+    expect(chamadas.esquecerTarefa).not.toHaveBeenCalled()
+
+    await usuario.click(cancelar)
+    expect(confirmar).toHaveBeenCalledTimes(2)
+    expect(chamadas.esquecerTarefa).toHaveBeenCalledWith('t1')
+    // Fica na lista como "Cancelando", sem botão, até o backend tirar
+    expect(await screen.findByText('Cancelando')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Cancelar|Tirar/ })).not.toBeInTheDocument()
+    confirmar.mockRestore()
+  })
+
+  it('tirar da fila uma que ainda espera não pede confirmação e mostra o erro do backend', async () => {
     chamadas.fila.mockResolvedValue([tarefa({ estado: 'na fila' })])
-    chamadas.esquecerTarefa.mockRejectedValue(new ErroApi(409, 'A tarefa já começou e não pode ser removida.'))
+    chamadas.esquecerTarefa.mockRejectedValue(new ErroApi(404, 'Essa tarefa não está na fila.'))
+    const confirmar = vi.spyOn(window, 'confirm')
     const usuario = userEvent.setup()
     render(<TelaInicio />)
     await usuario.click(await screen.findByRole('button', { name: 'Tirar Help! da fila' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('A tarefa já começou e não pode ser removida.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Essa tarefa não está na fila.')
+    expect(confirmar).not.toHaveBeenCalled()
+    confirmar.mockRestore()
   })
 
   it('a fila some quando está vazia', async () => {

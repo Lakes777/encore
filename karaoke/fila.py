@@ -4,6 +4,9 @@ Separar é pesado (usa toda a CPU ou a GPU), então a fila prepara UMA música
 por vez, numa thread separada, enquanto a API continua respondendo. Cada
 tarefa guarda estado e progresso para a tela mostrar.
 
+Cancelar: o pedido só marca a tarefa. Toda atualização de progresso confere a
+marca e levanta Cancelada; a separação roda num processo à parte, que é encerrado.
+
 Cada música pronta fica numa pasta própria, com as faixas e um musica.json.
 """
 
@@ -15,9 +18,10 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from karaoke.analise import analisar_tom
+from karaoke.cancelamento import Cancelada
 from karaoke.download import baixar_audio
 from karaoke.faixas import INSTRUMENTAL, Faixa, Musica
-from karaoke.separacao import MODOS, obter_modo, separar
+from karaoke.separacao import MODOS, obter_modo, separar_em_processo
 from karaoke.versoes import MODO_PRONTA, preparar_versao_pronta
 
 NA_FILA = "na fila"
@@ -27,6 +31,7 @@ SEPARANDO = "separando"
 ANALISANDO = "analisando"
 PRONTA = "pronta"
 ERRO = "erro"
+CANCELANDO = "cancelando"
 
 NOME_ORIGINAL = "original"  # faixa da música inteira, para o botão "tocar a original"
 
@@ -56,7 +61,7 @@ class Tarefa:
 
 
 class Fila:
-    def __init__(self, pasta, pasta_modelos="modelos", baixar=baixar_audio, separar=separar, analisar=analisar_tom,
+    def __init__(self, pasta, pasta_modelos="modelos", baixar=baixar_audio, separar=separar_em_processo, analisar=analisar_tom,
                  preparar_versao=preparar_versao_pronta, modo_reserva="rapido"):
         """`modo_reserva`: com que modo separar quando nenhuma versão pronta serve."""
         self.pasta = Path(pasta)
@@ -65,6 +70,7 @@ class Fila:
         self._preparar_versao = preparar_versao
         self.modo_reserva = obter_modo(modo_reserva).nome
         self._tarefas = {}
+        self._canceladas = set()  # ids que o usuário mandou parar
         self._condicao = threading.Condition()
         self._thread = None
 
@@ -85,19 +91,25 @@ class Fila:
             return [Tarefa(**asdict(t)) for t in self._tarefas.values()]
 
     def esquecer(self, id_tarefa):
-        """Tira da lista uma tarefa pronta ou com erro (não cancela a que está rodando)."""
+        """Tira da lista. Se a música estiver sendo preparada, cancela: ela fica "cancelando"
+        até o trabalho parar, e aí a pasta é apagada e a tarefa some."""
         with self._condicao:
             tarefa = self._tarefas.get(id_tarefa)
             if tarefa is None:
                 raise KeyError(id_tarefa)
-            if tarefa.estado not in (PRONTA, ERRO, NA_FILA):
-                raise ValueError("Essa música está sendo preparada agora; espere terminar.")
-            del self._tarefas[id_tarefa]
+            if tarefa.estado in (PRONTA, ERRO, NA_FILA):
+                del self._tarefas[id_tarefa]
+            else:
+                self._canceladas.add(id_tarefa)
+                tarefa.estado = CANCELANDO
 
     # ---------- trabalho ----------
 
     def _atualizar(self, tarefa, **campos):
+        """Muda os campos; é também o ponto onde o cancelamento é percebido."""
         with self._condicao:
+            if tarefa.id in self._canceladas:
+                raise Cancelada()
             for nome, valor in campos.items():
                 setattr(tarefa, nome, valor)
 
@@ -121,6 +133,7 @@ class Fila:
                 tarefa.id_video, pasta,
                 lambda fracao: self._atualizar(tarefa, progresso=round(fracao * _FIM_DOWNLOAD, 3)),
             )
+            self._atualizar(tarefa)  # cancelada no fim do download (sem aviso de progresso)?
             faixas, extras = None, {"modo": tarefa.modo}
             if tarefa.modo == MODO_PRONTA:
                 faixas, extras = self._procurar_versao_pronta(tarefa, original, pasta)
@@ -138,7 +151,12 @@ class Fila:
             self._atualizar(tarefa, estado=PRONTA, progresso=1.0)
         except Exception as erro:  # qualquer falha vira mensagem na tela, e a fila segue
             shutil.rmtree(pasta, ignore_errors=True)
-            self._atualizar(tarefa, estado=ERRO, erro=str(erro) or type(erro).__name__)
+            with self._condicao:
+                if tarefa.id in self._canceladas:  # Cancelada, ou falhou enquanto parava: tanto faz
+                    self._canceladas.discard(tarefa.id)
+                    del self._tarefas[tarefa.id]
+                else:
+                    tarefa.estado, tarefa.erro = ERRO, str(erro) or type(erro).__name__
 
     def _procurar_versao_pronta(self, tarefa, original, pasta):
         """Devolve (faixas, extras) com a versão pronta, ou (None, extras) para separar com IA."""
@@ -150,6 +168,8 @@ class Fila:
                 lambda fracao: self._atualizar(
                     tarefa, progresso=round(_FIM_DOWNLOAD + fracao * (_FIM_PROCURA - _FIM_DOWNLOAD), 3)),
             )
+        except Cancelada:
+            raise
         except Exception:
             # YouTube recusou a busca, internet caiu...: a original já está baixada, então
             # separa com IA em vez de perder tudo
@@ -170,7 +190,8 @@ class Fila:
             parte = 0 if numero == 1 else _PARTE_DA_ETAPA_1
             self._atualizar(tarefa, progresso=round(inicio + (_COMECO_ANALISE - inicio) * parte, 3))
 
-        return self._separar(original, pasta, modo, self.pasta_modelos, ao_mudar_etapa)
+        return self._separar(original, pasta, modo, self.pasta_modelos, ao_mudar_etapa,
+                             verificar=lambda: self._atualizar(tarefa))
 
     def _salvar(self, pasta, tarefa, musica, extras):
         dados = musica.para_dict() | {"id": tarefa.id, "id_video": tarefa.id_video, "duracao": tarefa.duracao} | extras

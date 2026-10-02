@@ -121,12 +121,11 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
 
     @app.delete("/api/fila/{id_tarefa}", status_code=204)
     def esquecer_tarefa(id_tarefa: str):
+        """Tira da fila; se a música estiver sendo preparada, cancela (fica "cancelando" e some)."""
         try:
             fila.esquecer(id_tarefa)
         except KeyError:
             raise HTTPException(404, "Essa tarefa não está na fila.") from None
-        except ValueError as erro:
-            raise HTTPException(409, str(erro)) from None
 
     @app.get("/api/musicas")
     def listar_musicas():

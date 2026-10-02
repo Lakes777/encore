@@ -165,6 +165,10 @@
   color: var(--perigo);
 }
 
+.tarefa--cancelando {
+  opacity: 0.6;
+}
+
 /* ---------- minhas músicas ---------- */
 
 .musica__linha {

@@ -110,6 +110,10 @@ export function TelaInicio() {
     void carregarFila()
   }
 
+  function aoCancelar() {
+    void carregarFila()
+  }
+
   return (
     <main className="pagina inicio">
       <h1 className="inicio__titulo">Karaokê</h1>
@@ -132,7 +136,7 @@ export function TelaInicio() {
           {erroFila}
         </p>
       )}
-      {tarefas.length > 0 && <Fila tarefas={tarefas} sistema={sistema} aoRemover={aoRemover} />}
+      {tarefas.length > 0 && <Fila tarefas={tarefas} sistema={sistema} aoRemover={aoRemover} aoCancelar={aoCancelar} />}
 
       <MinhasMusicas
         musicas={musicas}

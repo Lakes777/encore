@@ -5,7 +5,7 @@ import pytest
 
 from karaoke.analise import PERFIL_MAIOR, PERFIL_MENOR, analisar_tom, tom_do_cromagrama
 from karaoke.faixas import INSTRUMENTAL, NOTAS, VOCAIS_DE_APOIO, VOZ_PRINCIPAL, Faixa, Musica
-from karaoke.fila import ERRO, NA_FILA, PRONTA, Fila
+from karaoke.fila import CANCELANDO, ERRO, NA_FILA, PRONTA, Fila
 from karaoke.versoes import MODO_PRONTA, Comparacao, VersaoPronta
 
 # ---------- tom e escala ----------
@@ -58,7 +58,7 @@ def baixar_falso(id_video, pasta, ao_progredir):
     return pasta / "original.wav"
 
 
-def separar_falso(audio, pasta, modo, pasta_modelos, ao_mudar_etapa):
+def separar_falso(audio, pasta, modo, pasta_modelos, ao_mudar_etapa, verificar=None):
     ao_mudar_etapa(1, 2)
     ao_mudar_etapa(2, 2)
     return [Faixa(VOZ_PRINCIPAL, "voz-principal.wav"), Faixa(VOCAIS_DE_APOIO, "vocais-de-apoio.wav"),
@@ -110,7 +110,7 @@ def test_analisa_o_tom_pelo_instrumental(tmp_path):
 def test_progresso_so_avanca(tmp_path):
     vistos = []
 
-    def separar_espiando(audio, pasta, modo, pasta_modelos, ao_mudar_etapa):
+    def separar_espiando(audio, pasta, modo, pasta_modelos, ao_mudar_etapa, verificar=None):
         for numero in (1, 2):
             ao_mudar_etapa(numero, 2)
             vistos.append(fila.tarefas()[0].progresso)
@@ -123,7 +123,7 @@ def test_progresso_so_avanca(tmp_path):
 
 
 def test_erro_vira_mensagem_apaga_a_pasta_e_a_fila_segue(tmp_path):
-    def separar_quebrado(*args):
+    def separar_quebrado(*args, **kwargs):
         raise RuntimeError("sem memória")
 
     fila = fila_falsa(tmp_path, separar=separar_quebrado)
@@ -152,16 +152,73 @@ def test_esquecer_tira_da_lista(tmp_path):
         fila.esquecer(tarefa.id)
 
 
-def test_nao_esquece_a_musica_que_esta_sendo_preparada(tmp_path):
-    def separar_que_tenta_esquecer(audio, pasta, modo, pasta_modelos, ao_mudar_etapa):
-        with pytest.raises(ValueError, match="espere"):
-            fila.esquecer(fila.tarefas()[0].id)
-        return separar_falso(audio, pasta, modo, pasta_modelos, ao_mudar_etapa)
+def test_cancelar_durante_a_separacao_apaga_tudo_e_a_fila_segue(tmp_path):
+    estados = []
 
-    fila = fila_falsa(tmp_path, separar=separar_que_tenta_esquecer)
-    fila.adicionar("2Q_ZzBGPdqE", "Help!")
+    def separar_cancelado(audio, pasta, modo, pasta_modelos, ao_mudar_etapa, verificar=None):
+        ao_mudar_etapa(1, 2)
+        fila.esquecer(fila.tarefas()[0].id)
+        fila.esquecer(fila.tarefas()[0].id)  # pedir de novo não muda nada
+        estados.append(fila.tarefas()[0].estado)
+        verificar()  # a separação de verdade confere a cada meio segundo
+        pytest.fail("devia ter parado no verificar()")
+
+    fila = fila_falsa(tmp_path, separar=separar_cancelado)
+    primeira = fila.adicionar("2Q_ZzBGPdqE", "Help!")
+    fila.adicionar("N4KvafPbauw", "Yellow")
+    fila.processar_proxima()
+    assert estados == [CANCELANDO]
+    assert [t.titulo for t in fila.tarefas()] == ["Yellow"]
+    assert not (tmp_path / primeira.id).exists()
+
+    fila._separar = separar_falso
     fila.processar_proxima()
     assert fila.tarefas()[0].estado == PRONTA
+
+
+def test_cancelar_durante_o_download_nao_separa(tmp_path):
+    def baixar_cancelado(id_video, pasta, ao_progredir):
+        pasta.mkdir(parents=True)
+        fila.esquecer(fila.tarefas()[0].id)
+        ao_progredir(0.5)
+        pytest.fail("o aviso de progresso devia ter parado o download")
+
+    fila = fila_falsa(tmp_path, baixar=baixar_cancelado, separar=lambda *args, **kwargs: pytest.fail("separou"))
+    tarefa = fila.adicionar("2Q_ZzBGPdqE", "Help!")
+    fila.processar_proxima()
+    assert fila.tarefas() == []
+    assert not (tmp_path / tarefa.id).exists()
+
+
+def test_cancelar_durante_a_procura_nao_cai_na_separacao(tmp_path):
+    def preparar_cancelado(original, pasta, titulo, artista, duracao, id_video, ao_progredir):
+        fila.esquecer(fila.tarefas()[0].id)
+        ao_progredir(0.3)
+
+    fila = fila_falsa(tmp_path, preparar_versao=preparar_cancelado,
+                      separar=lambda *args, **kwargs: pytest.fail("cancelada não é procura que falhou"))
+    fila.adicionar("2Q_ZzBGPdqE", "Help!", modo=MODO_PRONTA)
+    fila.processar_proxima()
+    assert fila.tarefas() == []
+
+
+def test_cancelar_durante_a_analise_apaga_a_musica_quase_pronta(tmp_path):
+    fila = fila_falsa(tmp_path, analisar=lambda caminho: fila.esquecer(tarefa.id) or ("A", "maior"))
+    tarefa = fila.adicionar("2Q_ZzBGPdqE", "Help!")
+    fila.processar_proxima()
+    assert fila.tarefas() == []
+    assert not (tmp_path / tarefa.id).exists()
+
+
+def test_falha_enquanto_cancelava_some_em_vez_de_virar_erro(tmp_path):
+    def separar_que_quebra(audio, pasta, modo, pasta_modelos, ao_mudar_etapa, verificar=None):
+        fila.esquecer(fila.tarefas()[0].id)
+        raise RuntimeError("processo encerrado")
+
+    fila = fila_falsa(tmp_path, separar=separar_que_quebra)
+    fila.adicionar("2Q_ZzBGPdqE", "Help!")
+    fila.processar_proxima()
+    assert fila.tarefas() == []
 
 
 def test_thread_em_segundo_plano_prepara_as_musicas(tmp_path):
@@ -195,7 +252,7 @@ def versao_falsa(achou=True):
 
 def test_versao_pronta_vira_o_instrumental_sem_separar(tmp_path):
     fila = fila_falsa(tmp_path, preparar_versao=versao_falsa(),
-                      separar=lambda *args: pytest.fail("não devia separar com IA"))
+                      separar=lambda *args, **kwargs: pytest.fail("não devia separar com IA"))
     tarefa = fila.adicionar("yKNxeF4KMsY", "Yellow", "Coldplay", modo=MODO_PRONTA, duracao=269)
     fila.processar_proxima()
 
@@ -211,7 +268,7 @@ def test_versao_pronta_vira_o_instrumental_sem_separar(tmp_path):
 def test_sem_versao_pronta_separa_com_o_modo_reserva_e_avisa(tmp_path):
     modos = []
 
-    def separar(audio, pasta, modo, pasta_modelos, ao_mudar_etapa):
+    def separar(audio, pasta, modo, pasta_modelos, ao_mudar_etapa, verificar=None):
         modos.append(modo)
         return separar_falso(audio, pasta, modo, pasta_modelos, ao_mudar_etapa)
 
@@ -236,7 +293,7 @@ def test_progresso_so_avanca_mesmo_quando_cai_na_separacao(tmp_path):
     def preparar(*args):
         versao_falsa(achou=False)(*args[:6], lambda fracao: (args[6](fracao), vistos.append(fila.tarefas()[0].progresso)))
 
-    def separar(audio, pasta, modo, pasta_modelos, ao_mudar_etapa):
+    def separar(audio, pasta, modo, pasta_modelos, ao_mudar_etapa, verificar=None):
         for numero in (1, 2):
             ao_mudar_etapa(numero, 2)
             vistos.append(fila.tarefas()[0].progresso)
