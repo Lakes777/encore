@@ -9,6 +9,8 @@ import { artistaDoCanal } from '../logica/youtube.ts'
 import { Previa } from './Previa.tsx'
 
 export const AVISO_ALTA_NA_CPU = 'Sem placa de vídeo, o modo Alta fica muito lento.'
+export const AVISO_CLIPE =
+  'Videoclipe: pode ter introdução ou cenas a mais, e aí a letra e a versão pronta saem do tempo. Prefira o áudio da música.'
 
 interface Props {
   sistema: Sistema | null
@@ -157,7 +159,13 @@ function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, 
           <h3 className="resultado__titulo">{resultado.titulo}</h3>
           <p className="texto-fraco">
             {resultado.canal} · {formatarDuracao(resultado.duracao)}
+            {resultado.tipo === 'audio' && ' · áudio da música'}
           </p>
+          {resultado.tipo === 'clipe' && (
+            <p className="aviso" title='Áudio da música: "Official Audio", "Lyrics" ou canal "Topic"'>
+              {AVISO_CLIPE}
+            </p>
+          )}
         </div>
       </div>
 

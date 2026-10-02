@@ -19,6 +19,34 @@ _LINK_YOUTUBE = re.compile(
     r"([A-Za-z0-9_-]{11})(?:[?&#/].*)?$"
 )
 
+# Clipe: o áudio do vídeo costuma ter introdução falada, cenas ou outra edição, e
+# aí a letra do LRCLIB e o instrumental pronto não batem com ele.
+_CLIPE = re.compile(
+    r"official\s+(?:\w+\s+)?v[ií]deo|music\s+v[ií]deo|v[ií]deo\s*clip|videoclipe|\bclipe\b|\bclip\s+oficial"
+    r"|v[ií]deo\s+oficial|[(\[]\s*(?:official\s+)?(?:v[ií]deo|mv)\s*[)\]]|\bofficial\s+mv\b",
+    re.IGNORECASE,
+)
+# Áudio da música: o mesmo do disco, que é o que a letra e o instrumental seguem
+_AUDIO = re.compile(r"official\s+audio|[aá]udio\s+oficial|[(\[]\s*[aá]udio\s*[)\]]", re.IGNORECASE)
+# Vídeo com a letra (lyric video): usa o áudio do disco. Só entre parênteses ou
+# colchetes, porque "Letra" ou "Lyric" podem ser parte do nome da música.
+_LETRA = re.compile(r"[(\[][^)\]]*\b(?:lyrics?|letra)\b", re.IGNORECASE)
+
+CLIPE, AUDIO = "clipe", "audio"
+
+
+def tipo_do_video(titulo, canal):
+    """"audio" (o áudio do disco), "clipe" (pode ter partes a mais) ou None (não dá para saber)."""
+    if canal.endswith(" - Topic"):  # canal automático do YouTube Music: sempre o áudio do disco
+        return AUDIO
+    if _LETRA.search(titulo):  # antes do clipe: "(Official Lyric Video)" é áudio do disco
+        return AUDIO
+    if _CLIPE.search(titulo):
+        return CLIPE
+    if _AUDIO.search(titulo):
+        return AUDIO
+    return None
+
 
 @dataclass
 class Resultado:
@@ -42,6 +70,10 @@ class Resultado:
             return 0
         return min(self.duracao // 3, self.duracao - DURACAO_PREVIA)
 
+    @property
+    def tipo(self):
+        return tipo_do_video(self.titulo, self.canal)
+
     def para_dict(self):
         return {
             "id": self.id,
@@ -51,6 +83,7 @@ class Resultado:
             "miniatura": self.miniatura,
             "url": self.url,
             "inicio_previa": self.inicio_previa(),
+            "tipo": self.tipo,
         }
 
 
@@ -101,4 +134,6 @@ def buscar(texto, limite=LIMITE_PADRAO, extrair=_extrair_com_yt_dlp):
 
     info = extrair(f"ytsearch{limite}:{texto}") or {}
     resultados = (_resultado(item or {}) for item in info.get("entries") or [])
-    return [r for r in resultados if r is not None]
+    # Áudio da música primeiro e clipes por último; no resto, a ordem do YouTube
+    ordem = {AUDIO: 0, None: 1, CLIPE: 2}
+    return sorted((r for r in resultados if r is not None), key=lambda r: ordem[r.tipo])

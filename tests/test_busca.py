@@ -1,6 +1,6 @@
 import pytest
 
-from karaoke.busca import DURACAO_PREVIA, Resultado, buscar, id_do_link
+from karaoke.busca import DURACAO_PREVIA, Resultado, buscar, id_do_link, tipo_do_video
 
 
 def video(id_="dQw4w9WgXcQ", titulo="Help! (Remastered 2009)", duracao=140):
@@ -107,3 +107,48 @@ def test_para_dict_traz_url_e_inicio_da_previa():
     dados = Resultado("aaaaaaaaaaa", "Help!", "The Beatles", 240, None).para_dict()
     assert dados["url"] == "https://www.youtube.com/watch?v=aaaaaaaaaaa"
     assert dados["inicio_previa"] == 80
+
+
+@pytest.mark.parametrize("titulo, canal, tipo", [
+    ("Audioslave - Like a Stone (Official Video)", "AudioslaveVEVO", "clipe"),
+    ("Avenged Sevenfold - Bat Country [Official Music Video]", "Avenged Sevenfold", "clipe"),
+    ("Artista - Música (Clipe Oficial)", "Artista", "clipe"),
+    ("Artista - Música [MV]", "Artista", "clipe"),
+    ("Audioslave - Show Me How to Live (Official Audio)", "Audioslave", "audio"),
+    ("Like A Stone - Audioslave (Lyrics)", "Fã", "audio"),
+    ("Cochise", "Audioslave - Topic", "audio"),
+    ("Help! (Official Video)", "The Beatles - Topic", "audio"),  # canal Topic vale mais que o título
+    ("Banda - Música (Vídeo Oficial)", "Banda", "clipe"),
+    ("Banda - Música (Video Oficial)", "Banda", "clipe"),
+    ("Banda - Música (Official HD Video)", "Banda", "clipe"),
+    ("Banda - Música (Official 4K Video)", "Banda", "clipe"),
+    ("Banda - Música (Áudio Oficial)", "Banda", "audio"),
+    ("Banda - Música (Áudio)", "Banda", "audio"),
+    ("Like a Stone (Official Lyric Video)", "Audioslave", "audio"),
+    ("Banda - Música (Lyrics/Letra)", "Fã", "audio"),
+    ("Letra e Música - Live", "Fã", None),  # "Letra" no nome da música não é lyric video
+    ("Lyric - Canção", "Fã", None),
+    ("Audioslave - Like a stone (HD)", "Fã", None),
+    ("Audioslave - Like A Stone (Live 8 2005)", "Fã", None),
+    ("Videogame", "Fã", None),  # "video" só como palavra solta não é clipe
+])
+def test_tipo_do_video(titulo, canal, tipo):
+    assert tipo_do_video(titulo, canal) == tipo
+
+
+def test_busca_poe_o_audio_primeiro_e_os_clipes_por_ultimo():
+    def item(id_, titulo):
+        return {"id": id_, "title": titulo, "channel": "Fã", "duration": 300}
+
+    extrair = ExtratorFalso({"entries": [
+        item("clipe111111", "Like a Stone (Official Video)"),
+        item("hd111111111", "Like a Stone (HD)"),
+        item("letra111111", "Like a Stone (Lyrics)"),
+        item("hd222222222", "Like a Stone (Live)"),
+    ]})
+    ids = [r.id for r in buscar("like a stone", extrair=extrair)]
+    assert ids == ["letra111111", "hd111111111", "hd222222222", "clipe111111"]
+
+
+def test_para_dict_traz_o_tipo():
+    assert Resultado("aaaaaaaaaaa", "Help! (Official Video)", "The Beatles", 140, None).para_dict()["tipo"] == "clipe"

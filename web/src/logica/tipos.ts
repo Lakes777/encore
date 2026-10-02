@@ -22,6 +22,8 @@ export interface ResultadoBusca {
   url: string
   /** Segundo do vídeo em que a prévia de 15 s começa. */
   inicio_previa: number
+  /** "audio" = o áudio do disco; "clipe" = videoclipe, pode ter partes a mais; null = não dá para saber. */
+  tipo: 'audio' | 'clipe' | null
   /** Segundos que a separação deve levar em cada modo (null = sem medição). */
   estimativas: Record<NomeModo, number | null>
 }

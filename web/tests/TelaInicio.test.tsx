@@ -33,6 +33,7 @@ function resultado(extra: Partial<ResultadoBusca> = {}): ResultadoBusca {
     miniatura: 'https://i.ytimg.com/vi/2Q_ZzBGPdqE/hq.jpg',
     url: 'https://www.youtube.com/watch?v=2Q_ZzBGPdqE',
     inicio_previa: 46,
+    tipo: null,
     estimativas: { pronta: 180, rapido: 50, qualidade: 1300 },
     ...extra,
   }
@@ -150,6 +151,20 @@ describe('busca', () => {
     expect(within(item).getByText(/se nenhum servir, separa com IA \(\s*Rápida\)/)).toBeInTheDocument()
     await usuario.click(within(item).getByRole('button', { name: 'Adicionar' }))
     expect(chamadas.adicionarNaFila).toHaveBeenCalledWith(expect.objectContaining({ modo: 'pronta' }))
+  })
+
+  it('avisa nos clipes e marca o áudio da música', async () => {
+    chamadas.buscar.mockResolvedValue([
+      resultado({ tipo: 'audio' }),
+      resultado({ id: 'xxxxxxxxxxx', titulo: 'Help! (Official Video)', canal: 'The Beatles', tipo: 'clipe' }),
+    ])
+    await buscar()
+    const audio = (await screen.findByRole('heading', { name: 'Help! (Remastered 2009)' })).closest('li')!
+    const clipe = screen.getByRole('heading', { name: 'Help! (Official Video)' }).closest('li')!
+    expect(within(audio).getByText(/áudio da música/)).toBeInTheDocument()
+    expect(within(audio).queryByText(/Videoclipe/)).not.toBeInTheDocument()
+    expect(within(clipe).getByText(/Videoclipe/)).toBeInTheDocument()
+    expect(within(clipe).queryByText(/· áudio da música/)).not.toBeInTheDocument()
   })
 
   it('não avisa sobre o modo Alta quando tem placa de vídeo', async () => {
