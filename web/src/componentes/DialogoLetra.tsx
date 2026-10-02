@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../logica/api.ts'
-import { formatarDuracao } from '../logica/formatar.ts'
+import { formatarDuracao, nomeDaMusica } from '../logica/formatar.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import type { Musica, VersaoLetra } from '../logica/tipos.ts'
 import { Dialogo } from './Dialogo.tsx'
@@ -49,7 +49,7 @@ export function DialogoLetra({ musica, aoFechar, aoMudar }: Props) {
   }
 
   return (
-    <Dialogo titulo={`Letra de ${musica.titulo}`} aoFechar={aoFechar}>
+    <Dialogo titulo={`Letra de ${nomeDaMusica(musica)}`} aoFechar={aoFechar}>
       {musica.tem_letra && (
         <p>
           <button type="button" className="botao botao--perigo" disabled={salvando} onClick={() => salvar(() => api.apagarLetra(musica.id))}>

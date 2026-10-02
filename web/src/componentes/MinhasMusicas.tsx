@@ -1,11 +1,12 @@
-import { Download, FileText, Image as IconeImagem, Play, Trash2, Upload } from 'lucide-react'
+import { Download, FileText, Image as IconeImagem, ListMusic, Mic, Play, Trash2, Upload } from 'lucide-react'
 import { useRef, useState, type ChangeEvent } from 'react'
 import { api, ErroApi, urlDaExportacao, urlDaFaixa, urlDaPrevia } from '../logica/api.ts'
-import { descricaoTom } from '../logica/formatar.ts'
+import { descricaoTom, nomeDaMusica } from '../logica/formatar.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import { linkDaMusica } from '../logica/rota.ts'
 import { NOME_ORIGINAL, type Musica } from '../logica/tipos.ts'
-import { inicioDaPrevia } from '../logica/youtube.ts'
+import { capaDaMusica, inicioDaPrevia } from '../logica/youtube.ts'
+import { Capa } from './Capa.tsx'
 import { DialogoFundo } from './DialogoFundo.tsx'
 import { DialogoLetra } from './DialogoLetra.tsx'
 import { Previa } from './Previa.tsx'
@@ -52,7 +53,7 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
   }
 
   async function apagar(musica: Musica) {
-    if (!window.confirm(`Apagar "${musica.titulo}"? As faixas separadas também serão apagadas.`)) return
+    if (!window.confirm(`Apagar "${nomeDaMusica(musica)}"? As faixas separadas também serão apagadas.`)) return
     setErroApagar('')
     try {
       await api.apagarMusica(musica.id)
@@ -66,7 +67,14 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
   return (
     <section className="secao" aria-labelledby="titulo-musicas">
       <div className="secao__cabecalho">
-        <h2 id="titulo-musicas">Minhas músicas</h2>
+        <div className="secao__nome">
+          <h2 id="titulo-musicas">Minhas músicas</h2>
+          {musicas && musicas.length > 0 && (
+            <span className="contador" aria-label={`${musicas.length} ${musicas.length === 1 ? 'música' : 'músicas'}`}>
+              {musicas.length}
+            </span>
+          )}
+        </div>
         <button
           type="button"
           className="botao"
@@ -103,12 +111,31 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
         </p>
       )}
       {!musicas && !erro && (
-        <p className="texto-fraco" role="status">
-          Carregando...
-        </p>
+        <>
+          <p className="invisivel" role="status">
+            Carregando...
+          </p>
+          <ul className="lista" aria-hidden>
+            {[0, 1, 2].map((indice) => (
+              <li key={indice} className="cartao musica musica--esqueleto">
+                <div className="musica__linha">
+                  <div className="capa musica__capa" />
+                  <div className="musica__texto">
+                    <span className="esqueleto esqueleto--titulo" />
+                    <span className="esqueleto" />
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       {musicas && musicas.length === 0 && (
-        <p className="texto-fraco">Nenhuma música ainda. Busque uma música acima e adicione na fila: quando ficar pronta, ela aparece aqui.</p>
+        <div className="cartao vazio">
+          <ListMusic size={28} aria-hidden />
+          <p>Nenhuma música ainda.</p>
+          <p className="texto-fraco">Busque uma música acima e adicione na fila: quando ficar pronta, ela aparece aqui.</p>
+        </div>
       )}
       {musicas && musicas.length > 0 && (
         <ul className="lista">
@@ -116,15 +143,25 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
             const chavePrevia = `musica:${musica.id}`
             const comPrevia = previaAberta === chavePrevia
             const original = musica.faixas.find((faixa) => faixa.nome === NOME_ORIGINAL)
+            const nome = nomeDaMusica(musica)
             return (
               <li key={musica.id} className="cartao musica">
                 <div className="musica__linha">
+                  {/* A capa também abre a música (fora do Tab: o título já é o link) */}
+                  <a href={linkDaMusica(musica.id)} className="musica__capa-link" tabIndex={-1} aria-hidden>
+                    <Capa url={capaDaMusica(musica)} className="musica__capa" />
+                    <span className="musica__cantar">
+                      <Mic size={20} aria-hidden />
+                    </span>
+                  </a>
                   <div className="musica__texto">
                     <h3 className="musica__titulo">
-                      <a href={linkDaMusica(musica.id)}>{musica.titulo}</a>
+                      <a href={linkDaMusica(musica.id)} title={nome === musica.titulo ? undefined : musica.titulo}>
+                        {nome}
+                      </a>
                     </h3>
                     {musica.artista && <p className="musica__artista">{musica.artista}</p>}
-                    <p className="texto-fraco">
+                    <p className="texto-fraco musica__detalhes">
                       {descricaoTom(musica)} · {musica.tem_letra ? 'com letra' : 'sem letra'}
                       {musica.versao_pronta && (
                         <span title={`Instrumental: ${musica.versao_pronta.titulo} (${musica.versao_pronta.canal})`}>
@@ -144,7 +181,7 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
                     <button
                       type="button"
                       className="botao botao--icone"
-                      aria-label={`Ouvir a prévia de ${musica.titulo}`}
+                      aria-label={`Ouvir a prévia de ${nome}`}
                       title="Ouvir a prévia de novo"
                       aria-pressed={comPrevia}
                       onClick={() => abrirPrevia(comPrevia ? null : chavePrevia)}
@@ -154,7 +191,7 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
                     <button
                       type="button"
                       className="botao botao--icone"
-                      aria-label={`Escolher a letra de ${musica.titulo}`}
+                      aria-label={`Escolher a letra de ${nome}`}
                       title="Escolher a letra"
                       onClick={() => setJanela({ tipo: 'letra', musica })}
                     >
@@ -163,7 +200,7 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
                     <button
                       type="button"
                       className="botao botao--icone"
-                      aria-label={`Trocar a imagem de fundo de ${musica.titulo}`}
+                      aria-label={`Trocar a imagem de fundo de ${nome}`}
                       title="Trocar a imagem de fundo"
                       onClick={() => setJanela({ tipo: 'fundo', musica })}
                     >
@@ -173,7 +210,7 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
                       className="botao botao--icone"
                       href={urlDaExportacao(musica.id)}
                       download
-                      aria-label={`Exportar ${musica.titulo}`}
+                      aria-label={`Exportar ${nome}`}
                       title="Exportar (.zip, para levar a outro computador)"
                     >
                       <Download size={18} aria-hidden />
@@ -181,7 +218,7 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
                     <button
                       type="button"
                       className="botao botao--icone botao--perigo"
-                      aria-label={`Apagar ${musica.titulo}`}
+                      aria-label={`Apagar ${nome}`}
                       title="Apagar"
                       onClick={() => apagar(musica)}
                     >
@@ -194,7 +231,7 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
                     url={original ? urlDaFaixa(musica.id, original.arquivo) : urlDaPrevia(musica.id_video)}
                     idVideo={musica.id_video}
                     inicio={inicioDaPrevia(musica.duracao)}
-                    titulo={musica.titulo}
+                    titulo={nome}
                     aoFechar={() => abrirPrevia(null)}
                   />
                 )}

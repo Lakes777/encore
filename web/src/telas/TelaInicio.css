@@ -1,8 +1,32 @@
-/* Tela inicial: funcional e limpa por enquanto (o visual ainda vai ganhar um upgrade). */
+/* Tela inicial: cabeçalho, busca, fila e a lista de músicas com capa. */
+
+.inicio__topo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.inicio__logo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--roxo);
+  color: #fff;
+}
 
 .inicio__titulo {
-  margin: 0 0 16px;
-  font-size: 1.75rem;
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.inicio__lema {
+  margin: 2px 0 0;
 }
 
 .secao {
@@ -24,6 +48,60 @@
 
 .secao__cabecalho h2 {
   margin: 0;
+}
+
+.secao__nome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Quantas músicas há: discreto, ao lado do título da seção */
+.contador {
+  min-width: 26px;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* Estado vazio: um cartão centrado, sem cara de erro */
+.vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.vazio p:first-of-type {
+  margin-top: 8px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ---------- capa (lista, fila e tela da música) ---------- */
+
+.capa {
+  flex: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-pequeno);
+  background: var(--surface-hover);
+  color: var(--text-muted);
+}
+
+.capa img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .secao h3 {
@@ -165,8 +243,13 @@
 .tarefa__topo {
   display: flex;
   gap: 12px;
-  align-items: flex-start;
-  margin-bottom: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.tarefa__capa {
+  width: 48px;
+  height: 48px;
 }
 
 .tarefa--pronta .tarefa__estado {
@@ -183,29 +266,138 @@
 
 /* ---------- minhas músicas ---------- */
 
+.musica {
+  padding: 12px;
+  transition: border-color 0.15s var(--ease-out), background 0.15s var(--ease-out);
+}
+
+.musica:hover {
+  border-color: #3a3c43;
+}
+
 .musica__linha {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
 }
 
+.musica__capa-link {
+  position: relative;
+  flex: none;
+  display: block;
+  border-radius: var(--radius-pequeno);
+}
+
+.musica__capa {
+  width: 72px;
+  height: 72px;
+}
+
+/* Ao passar o mouse na capa, o microfone avisa que ela abre a música */
+.musica__cantar {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pequeno);
+  background: rgb(124 77 204 / 0.75);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s var(--ease-out);
+}
+
+.musica__capa-link:hover .musica__cantar {
+  opacity: 1;
+}
+
+.musica__titulo {
+  line-height: 1.3;
+}
+
 .musica__titulo a {
+  color: var(--text);
   text-decoration: none;
 }
 
 .musica__titulo a:hover {
+  color: var(--destaque);
   text-decoration: underline;
+}
+
+.secao .musica__artista {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.secao .musica__detalhes {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
 }
 
 .musica__acoes {
   display: flex;
+  flex: none;
   gap: 6px;
 }
 
 .musica__acoes .botao[aria-pressed='true'] {
   border-color: var(--roxo);
   color: var(--destaque);
+}
+
+/* Enquanto carrega: blocos cinza no lugar das músicas */
+.musica--esqueleto .musica__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.esqueleto {
+  display: block;
+  width: 40%;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--surface-hover);
+}
+
+.esqueleto--titulo {
+  width: 60%;
+  height: 16px;
+}
+
+.musica--esqueleto .capa,
+.esqueleto {
+  animation: pulsar 1.4s ease-in-out infinite;
+}
+
+@keyframes pulsar {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* No celular, os botões descem para baixo da capa e do nome */
+@media (max-width: 640px) {
+  .musica__linha {
+    flex-wrap: wrap;
+  }
+
+  .musica__capa {
+    width: 60px;
+    height: 60px;
+  }
+
+  .musica__texto {
+    flex-basis: calc(100% - 74px);
+  }
+
+  .musica__acoes {
+    width: 100%;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
 }
 
 /* ---------- diálogos ---------- */

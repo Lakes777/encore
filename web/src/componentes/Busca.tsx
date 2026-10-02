@@ -74,7 +74,7 @@ export function Busca({ sistema, videosNaFila, aoAdicionar, previaAberta, abrirP
           id="campo-busca"
           className="campo busca__campo"
           type="search"
-          placeholder="nome da música ou link do YouTube"
+          placeholder="Música ou link do YouTube"
           value={texto}
           onChange={(evento) => mudarTexto(evento.target.value)}
         />

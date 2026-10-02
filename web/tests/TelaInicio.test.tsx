@@ -370,6 +370,41 @@ describe('minhas músicas', () => {
     expect(screen.getByText('tom desconhecido · sem letra')).toBeInTheDocument()
   })
 
+  it('mostra o título limpo, com o original no title, e usa ele nos botões', async () => {
+    chamadas.musicas.mockResolvedValue([
+      musica({ titulo: 'Avenged Sevenfold - Bat Country [Official Music Video]', titulo_limpo: 'Bat Country', artista: 'Avenged Sevenfold' }),
+    ])
+    render(<TelaInicio />)
+    const link = await screen.findByRole('link', { name: 'Bat Country' })
+    expect(link).toHaveAttribute('title', 'Avenged Sevenfold - Bat Country [Official Music Video]')
+    expect(screen.getByRole('button', { name: 'Apagar Bat Country' })).toBeInTheDocument()
+    expect(screen.getByLabelText('1 música')).toHaveTextContent('1')
+  })
+
+  it('capa: o fundo escolhido, senão a miniatura do YouTube, senão um bloco neutro', async () => {
+    chamadas.musicas.mockResolvedValue([
+      musica({ fundo: { url: 'https://capas.exemplo/help.jpg', desfoque: 12 } }),
+      musica({ id: '0123456789ab', titulo: 'Yesterday', id_video: 'Ho2e3Ylq3pA' }),
+      musica({ id: '0123456789ac', titulo: 'Sem vídeo', id_video: '' }),
+    ])
+    render(<TelaInicio />)
+    await screen.findByRole('link', { name: 'Yesterday' })
+    const capas = screen.getAllByTestId('capa')
+    expect(capas[0].querySelector('img')).toHaveAttribute('src', 'https://capas.exemplo/help.jpg')
+    expect(capas[1].querySelector('img')).toHaveAttribute('src', 'https://i.ytimg.com/vi/Ho2e3Ylq3pA/hqdefault.jpg')
+    expect(capas[2].querySelector('img')).toBeNull()
+    // Imagem quebrada vira o bloco neutro
+    fireEvent.error(capas[1].querySelector('img')!)
+    expect(screen.getAllByTestId('capa')[1].querySelector('img')).toBeNull()
+  })
+
+  it('mostra que está carregando enquanto a lista não chega', async () => {
+    chamadas.musicas.mockReturnValue(new Promise(() => {}))
+    render(<TelaInicio />)
+    expect(screen.getByRole('status')).toHaveTextContent('Carregando...')
+    await waitFor(() => expect(chamadas.fila).toHaveBeenCalled())
+  })
+
   it('marca as músicas com versão pronta', async () => {
     chamadas.musicas.mockResolvedValue([
       musica({

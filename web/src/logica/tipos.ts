@@ -80,7 +80,10 @@ export const DESFOQUE_PADRAO = 12
 export interface Musica {
   id: string
   id_video: string
+  /** O título como veio do YouTube (vale para buscar letra e capa). */
   titulo: string
+  /** O título sem "[Official Music Video]" e sem o artista na frente, só para mostrar. */
+  titulo_limpo?: string
   artista: string
   modo: NomeModo
   duracao: number | null

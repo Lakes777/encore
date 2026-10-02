@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api } from '../logica/api.ts'
+import { nomeDaMusica } from '../logica/formatar.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import { DESFOQUE_MAXIMO, DESFOQUE_PADRAO, type Capa, type Musica } from '../logica/tipos.ts'
 import { Dialogo } from './Dialogo.tsx'
@@ -52,7 +53,7 @@ export function DialogoFundo({ musica, aoFechar, aoMudar }: Props) {
   }
 
   return (
-    <Dialogo titulo={`Fundo de ${musica.titulo}`} aoFechar={aoFechar}>
+    <Dialogo titulo={`Fundo de ${nomeDaMusica(musica)}`} aoFechar={aoFechar}>
       <form onSubmit={salvar} className="fundo">
         {!capas && !erroCapas && (
           <p className="texto-fraco" role="status">

@@ -4,6 +4,8 @@ import { api } from '../logica/api.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import { nomeDoModo, rodando, TEXTO_DO_ESTADO } from '../logica/fila.ts'
 import type { Sistema, Tarefa } from '../logica/tipos.ts'
+import { miniaturaDoVideo } from '../logica/youtube.ts'
+import { Capa } from './Capa.tsx'
 
 interface Props {
   tarefas: Tarefa[]
@@ -46,6 +48,7 @@ export function Fila({ tarefas, sistema, aoRemover, aoCancelar }: Props) {
           return (
             <li key={tarefa.id} className={`cartao tarefa tarefa--${tarefa.estado === 'na fila' ? 'na-fila' : tarefa.estado}`}>
               <div className="tarefa__topo">
+                <Capa url={miniaturaDoVideo(tarefa.id_video)} className="tarefa__capa" />
                 <div className="tarefa__texto">
                   <h3 className="tarefa__titulo">{tarefa.titulo}</h3>
                   <p className="texto-fraco">

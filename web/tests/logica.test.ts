@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, ErroApi, urlDaFaixa } from '../src/logica/api.ts'
-import { descricaoTom, formatarAtraso, formatarDuracao, formatarEstimativa } from '../src/logica/formatar.ts'
+import { descricaoTom, formatarAtraso, formatarDuracao, formatarEstimativa, nomeDaMusica } from '../src/logica/formatar.ts'
+import { capaDaMusica, miniaturaDoVideo } from '../src/logica/youtube.ts'
 import { lerRota, linkDaMusica } from '../src/logica/rota.ts'
 import { ajustarVelocidade } from '../src/logica/velocidade.ts'
 import { batidasParaAgendar } from '../src/logica/metronomo.ts'
@@ -180,5 +181,20 @@ describe('palavra que acende', () => {
 describe('formatarAtraso', () => {
   it('sinal, vírgula e zero sem sinal', () => {
     expect([0.55, -0.05, -1.2, 0, 2].map(formatarAtraso)).toEqual(['+0,55 s', '−0,05 s', '−1,2 s', '0 s', '+2 s'])
+  })
+})
+
+describe('nome e capa da música', () => {
+  it('mostra o título limpo e cai no original quando ele não vem', () => {
+    expect(nomeDaMusica({ titulo: 'Avenged Sevenfold - Bat Country [Official Music Video]', titulo_limpo: 'Bat Country' })).toBe('Bat Country')
+    expect(nomeDaMusica({ titulo: 'Help!' })).toBe('Help!')
+    expect(nomeDaMusica({ titulo: 'Help!', titulo_limpo: '  ' })).toBe('Help!')
+  })
+
+  it('a capa é o fundo escolhido, senão a miniatura do vídeo, senão nada', () => {
+    expect(capaDaMusica({ id_video: 'IHS3qJdxefY', fundo: { url: 'https://capas.exemplo/a.jpg' } })).toBe('https://capas.exemplo/a.jpg')
+    expect(capaDaMusica({ id_video: 'IHS3qJdxefY', fundo: { url: null } })).toBe('https://i.ytimg.com/vi/IHS3qJdxefY/hqdefault.jpg')
+    expect(capaDaMusica({ id_video: '' })).toBeNull()
+    expect(miniaturaDoVideo(null)).toBeNull()
   })
 })

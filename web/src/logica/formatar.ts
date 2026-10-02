@@ -25,3 +25,8 @@ export function formatarAtraso(segundos: number) {
   const numero = Math.abs(segundos).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
   return `${segundos > 0 ? '+' : '−'}${numero} s`
 }
+
+/** Nome para mostrar: o título limpo que o servidor manda (ou o original, se não vier). */
+export function nomeDaMusica(musica: Pick<Musica, 'titulo' | 'titulo_limpo'>) {
+  return musica.titulo_limpo?.trim() || musica.titulo
+}

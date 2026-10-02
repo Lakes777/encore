@@ -1,3 +1,4 @@
+import { Mic } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Busca } from '../componentes/Busca.tsx'
 import { Fila } from '../componentes/Fila.tsx'
@@ -116,7 +117,15 @@ export function TelaInicio() {
 
   return (
     <main className="pagina inicio">
-      <h1 className="inicio__titulo">Karaokê</h1>
+      <header className="inicio__topo">
+        <span className="inicio__logo" aria-hidden>
+          <Mic size={22} aria-hidden />
+        </span>
+        <div>
+          <h1 className="inicio__titulo">Karaokê</h1>
+          <p className="texto-fraco inicio__lema">Busque uma música, tire a voz e cante por cima.</p>
+        </div>
+      </header>
       {erroSistema && (
         <p className="erro" role="alert">
           {erroSistema}

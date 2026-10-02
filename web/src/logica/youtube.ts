@@ -11,3 +11,13 @@ export function inicioDaPrevia(duracao: number | null | undefined) {
 export function artistaDoCanal(canal: string) {
   return canal.replace(/\s+-\s+Topic$/, '').trim()
 }
+
+/** Miniatura que o YouTube gera para todo vídeo (480x360). */
+export function miniaturaDoVideo(idVideo: string | null | undefined) {
+  return idVideo ? `https://i.ytimg.com/vi/${idVideo}/hqdefault.jpg` : null
+}
+
+/** Capa para a lista: a imagem de fundo escolhida; senão, a miniatura do vídeo; senão, nenhuma. */
+export function capaDaMusica(musica: { id_video?: string | null; fundo?: { url: string | null } }) {
+  return musica.fundo?.url || miniaturaDoVideo(musica.id_video)
+}
