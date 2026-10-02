@@ -18,7 +18,7 @@ from karaoke.biblioteca import DESFOQUE_MAXIMO, DESFOQUE_PADRAO, Biblioteca
 from karaoke.busca import LIMITE_MAXIMO, LIMITE_PADRAO, buscar
 from karaoke.capas import buscar_capas
 from karaoke.internet import pedir_json
-from karaoke.letras import baixar_letra, buscar_versoes
+from karaoke.letras import baixar_letra, buscar_versoes, limpar_titulo
 from karaoke.previa import Previas
 from karaoke.fila import Fila
 from karaoke.separacao import MODOS, detectar_dispositivo, estimar_segundos, modo_padrao
@@ -57,6 +57,14 @@ ERRO_INTERNET = "{servico} não respondeu. Confira a internet e tente de novo."
 def _estimativas(dispositivo, duracao):
     estimativas = {versoes.MODO_PRONTA: versoes.estimar_segundos(duracao)}
     return estimativas | {nome: estimar_segundos(nome, dispositivo, duracao) for nome in MODOS}
+
+
+def _com_titulo_limpo(musica):
+    """Junta o título sem os enfeites do YouTube ("Bat Country" em vez de
+    "Avenged Sevenfold - Bat Country [Official Music Video]"), só para a tela mostrar.
+    Não é salvo: o título original continua sendo o que vale para letra e capa."""
+    titulo, _ = limpar_titulo(musica.get("titulo", ""), musica.get("artista", ""))
+    return {**musica, "titulo_limpo": titulo or musica.get("titulo", "")}
 
 
 def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=pedir_json, pasta_site=None,
@@ -136,12 +144,12 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
 
     @app.get("/api/musicas")
     def listar_musicas():
-        return biblioteca.listar()
+        return [_com_titulo_limpo(musica) for musica in biblioteca.listar()]
 
     @app.get("/api/musicas/{id_musica}")
     def obter_musica(id_musica: str):
         try:
-            return biblioteca.obter(id_musica)
+            return _com_titulo_limpo(biblioteca.obter(id_musica))
         except KeyError:
             raise HTTPException(404, "Música não encontrada.") from None
 

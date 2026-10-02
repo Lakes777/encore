@@ -127,12 +127,24 @@ def test_cancelar_tarefa_rodando(pasta):
 def test_lista_obtem_e_apaga_musicas(pasta):
     dados = musica_salva(pasta)
     api = cliente(pasta)
-    assert api.get("/api/musicas").json() == [dados]
+    assert api.get("/api/musicas").json() == [{**dados, "titulo_limpo": "Help!"}]
     assert api.get(f"/api/musicas/{ID_MUSICA}").json()["titulo"] == "Help!"
     assert api.delete(f"/api/musicas/{ID_MUSICA}").status_code == 204
     assert api.get("/api/musicas").json() == []
     assert api.get(f"/api/musicas/{ID_MUSICA}").status_code == 404
     assert api.delete(f"/api/musicas/{ID_MUSICA}").status_code == 404
+
+
+def test_lista_e_musica_trazem_o_titulo_limpo_sem_perder_o_original(pasta):
+    titulo = "The Beatles - Help! [Official Music Video]"
+    musica_salva(pasta, titulo=titulo)
+    api = cliente(pasta)
+    (lista,) = api.get("/api/musicas").json()
+    assert (lista["titulo"], lista["titulo_limpo"]) == (titulo, "Help!")
+    musica = api.get(f"/api/musicas/{ID_MUSICA}").json()
+    assert (musica["titulo"], musica["titulo_limpo"]) == (titulo, "Help!")
+    # o campo é só para a tela: não vai para o musica.json
+    assert "titulo_limpo" not in json.loads((pasta / ID_MUSICA / "musica.json").read_text(encoding="utf-8"))
 
 
 def test_lista_ignora_json_estragado(pasta):
