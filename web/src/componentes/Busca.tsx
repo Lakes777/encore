@@ -7,6 +7,7 @@ import { nomeDoModo } from '../logica/fila.ts'
 import type { NomeModo, ResultadoBusca, Sistema, Tarefa } from '../logica/tipos.ts'
 import { artistaDoCanal } from '../logica/youtube.ts'
 import { Previa } from './Previa.tsx'
+import { LINK_DA_ABA } from '../logica/rota.ts'
 
 export const AVISO_ALTA_NA_CPU = 'Sem placa de vídeo, o modo Alta fica muito lento.'
 export const AVISO_CLIPE =
@@ -78,7 +79,7 @@ export function Busca({ sistema, videosNaFila, aoAdicionar, previaAberta, abrirP
           value={texto}
           onChange={(evento) => mudarTexto(evento.target.value)}
         />
-        <button type="submit" className="botao botao--principal" disabled={carregando || !texto.trim()}>
+        <button type="submit" className="botao botao--principal botao--vivo" disabled={carregando || !texto.trim()}>
           <Search size={16} aria-hidden />
           Buscar
         </button>
@@ -150,7 +151,7 @@ function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, 
   }
 
   return (
-    <li className="cartao resultado">
+    <li className="cartao resultado spot">
       <div className="resultado__linha">
         {resultado.miniatura ? (
           <img className="resultado__miniatura" src={resultado.miniatura} alt="" loading="lazy" />
@@ -211,12 +212,12 @@ function ItemResultado({ resultado, sistema, naFila, aoAdicionar, previaAberta, 
           Prévia
         </button>
         {estaNaFila ? (
-          <span className="resultado__na-fila">
+          <a className="resultado__na-fila" href={LINK_DA_ABA.fila} title="Ver na aba Fila">
             <Check size={16} aria-hidden />
             Na fila
-          </span>
+          </a>
         ) : (
-          <button type="button" className="botao botao--principal" onClick={adicionar} disabled={adicionando}>
+          <button type="button" className="botao botao--principal botao--vivo" onClick={adicionar} disabled={adicionando}>
             <Plus size={16} aria-hidden />
             {adicionando ? 'Adicionando…' : 'Adicionar'}
           </button>

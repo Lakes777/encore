@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { ListOrdered, X } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../logica/api.ts'
 import { nomeDaMusica } from '../logica/formatar.ts'
@@ -7,6 +7,7 @@ import { nomeDoModo, rodando, TEXTO_DO_ESTADO } from '../logica/fila.ts'
 import type { Sistema, Tarefa } from '../logica/tipos.ts'
 import { miniaturaDoVideo } from '../logica/youtube.ts'
 import { Capa } from './Capa.tsx'
+import { LINK_DA_ABA } from '../logica/rota.ts'
 
 interface Props {
   tarefas: Tarefa[]
@@ -43,12 +44,22 @@ export function Fila({ tarefas, sistema, aoRemover, aoCancelar }: Props) {
           {erro}
         </p>
       )}
+      {tarefas.length === 0 && (
+        <div className="cartao vazio">
+          <ListOrdered size={28} aria-hidden />
+          <p>Nada na fila.</p>
+          <p className="texto-fraco">
+            Adicione uma música na aba <a href={LINK_DA_ABA.buscar}>Buscar</a>: aqui aparece o progresso enquanto ela é preparada.
+          </p>
+        </div>
+      )}
+      {tarefas.length > 0 && (
       <ul className="lista">
         {tarefas.map((tarefa) => {
           const nome = nomeDaMusica(tarefa)
           const porcento = Math.round(Math.min(1, Math.max(0, tarefa.progresso)) * 100)
           return (
-            <li key={tarefa.id} className={`cartao tarefa tarefa--${tarefa.estado === 'na fila' ? 'na-fila' : tarefa.estado}`}>
+            <li key={tarefa.id} className={`cartao spot tarefa tarefa--${tarefa.estado === 'na fila' ? 'na-fila' : tarefa.estado}`}>
               <div className="tarefa__topo">
                 <Capa url={miniaturaDoVideo(tarefa.id_video)} className="tarefa__capa" />
                 <div className="tarefa__texto">
@@ -87,6 +98,7 @@ export function Fila({ tarefas, sistema, aoRemover, aoCancelar }: Props) {
           )
         })}
       </ul>
+      )}
     </section>
   )
 }

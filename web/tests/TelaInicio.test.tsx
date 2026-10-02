@@ -86,11 +86,55 @@ afterEach(() => {
 
 async function buscar(texto = 'help beatles') {
   const usuario = userEvent.setup()
-  render(<TelaInicio />)
+  render(<TelaInicio aba="buscar" />)
   await usuario.type(screen.getByRole('searchbox', { name: /nome da música/i }), texto)
   await usuario.click(screen.getByRole('button', { name: 'Buscar' }))
   return usuario
 }
+
+describe('abas', () => {
+  it('mostra só a aba aberta, com o item do menu marcado', async () => {
+    render(<TelaInicio aba="buscar" />)
+    expect(screen.getByRole('heading', { name: 'Buscar' })).toBeVisible()
+    expect(screen.queryByRole('heading', { name: 'Minhas músicas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Fila' })).not.toBeInTheDocument()
+    const menu = screen.getByRole('navigation', { name: 'Seções' })
+    expect(within(menu).getByRole('link', { name: 'Buscar' })).toHaveAttribute('aria-current', 'page')
+    expect(within(menu).getByRole('link', { name: 'Minhas músicas' })).toHaveAttribute('href', '#/')
+    expect(within(menu).getByRole('link', { name: 'Minhas músicas' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('ao trocar, a aba anterior sai, a nova entra com o foco no título e a busca continua lá', async () => {
+    chamadas.buscar.mockResolvedValue([resultado()])
+    const usuario = userEvent.setup()
+    const { rerender } = render(<TelaInicio aba="buscar" />)
+    await usuario.type(screen.getByRole('searchbox', { name: /nome da música/i }), 'help')
+    await usuario.click(screen.getByRole('button', { name: 'Buscar' }))
+    await screen.findByRole('heading', { name: 'Help! (Remastered 2009)' })
+
+    rerender(<TelaInicio aba="fila" />)
+    // Durante o fade de saída a aba antiga ainda está lá
+    expect(screen.getByRole('heading', { name: 'Buscar' }).closest('.aba-tela')).toHaveClass('aba-tela--saindo')
+    const fila = await screen.findByRole('heading', { name: 'Fila' })
+    expect(fila).toHaveFocus()
+    expect(screen.queryByRole('heading', { name: 'Buscar' })).not.toBeInTheDocument()
+
+    rerender(<TelaInicio aba="buscar" />)
+    expect(await screen.findByRole('heading', { name: 'Help! (Remastered 2009)' })).toBeVisible()
+    expect(screen.getByRole('searchbox', { name: /nome da música/i })).toHaveValue('help')
+  })
+
+  it('o contador da Fila mostra quantas estão em preparo', async () => {
+    chamadas.fila.mockResolvedValue([
+      tarefa({ id: 't1', estado: 'separando' }),
+      tarefa({ id: 't2', estado: 'na fila' }),
+      tarefa({ id: 't3', estado: 'pronta', progresso: 100 }),
+    ])
+    render(<TelaInicio />)
+    const fila = screen.getByRole('link', { name: /^Fila/ })
+    await waitFor(() => expect(fila).toHaveAccessibleName('Fila, 2 em preparo'))
+  })
+})
 
 describe('busca', () => {
   it('mostra os resultados e adiciona na fila com o modo escolhido', async () => {
@@ -123,8 +167,11 @@ describe('busca', () => {
     })
     expect(await within(item).findByText('Na fila')).toBeInTheDocument()
     expect(within(item).queryByRole('button', { name: 'Adicionar' })).not.toBeInTheDocument()
-    // A tarefa já aparece na fila e a fila é consultada de novo
-    const fila = (await screen.findByRole('heading', { name: 'Fila' })).closest('section')!
+    // "Na fila" leva para a aba Fila, que conta a música nova
+    expect(within(item).getByRole('link', { name: 'Na fila' })).toHaveAttribute('href', '#/fila')
+    expect(screen.getByRole('link', { name: /^Fila/ })).toHaveAccessibleName('Fila, 1 em preparo')
+    // A tarefa já está na fila (na aba escondida) e a fila é consultada de novo
+    const fila = screen.getByRole('heading', { name: 'Fila', hidden: true }).closest('section')!
     expect(within(fila).getByText(/0% · Alta/)).toBeInTheDocument()
     expect(chamadas.fila).toHaveBeenCalledTimes(2)
   })
@@ -237,7 +284,7 @@ describe('fila', () => {
     chamadas.fila.mockResolvedValue([
       tarefa({ id_video: '7QU1nvuxaMA', titulo: 'Audioslave - Like a Stone (Official Video)', titulo_limpo: 'Like a Stone', estado: 'erro', erro: 'x' }),
     ])
-    render(<TelaInicio />)
+    render(<TelaInicio aba="fila" />)
     const titulo = await screen.findByRole('heading', { name: 'Like a Stone' })
     expect(titulo).toHaveAttribute('title', 'Audioslave - Like a Stone (Official Video)')
     const fila = titulo.closest('section')!
@@ -250,7 +297,7 @@ describe('fila', () => {
     chamadas.fila
       .mockResolvedValueOnce([tarefa({ estado: 'separando', progresso: 0.45, modo: 'qualidade' })])
       .mockResolvedValue([tarefa({ estado: 'pronta', progresso: 1, modo: 'qualidade' })])
-    render(<TelaInicio />)
+    render(<TelaInicio aba="fila" />)
     await esperar()
 
     const fila = screen.getByRole('heading', { name: 'Fila' }).closest('section')!
@@ -275,7 +322,7 @@ describe('fila', () => {
   it('para de consultar quando a tela sai', async () => {
     vi.useFakeTimers()
     chamadas.fila.mockResolvedValue([tarefa({ estado: 'baixando', progresso: 0.1 })])
-    const { unmount } = render(<TelaInicio />)
+    const { unmount } = render(<TelaInicio aba="fila" />)
     await esperar()
     await esperar(1500)
     expect(chamadas.fila).toHaveBeenCalledTimes(2)
@@ -291,7 +338,7 @@ describe('fila', () => {
       .mockResolvedValueOnce([tarefa({ estado: 'separando', progresso: 0.1 })])
       .mockImplementationOnce(() => lenta([tarefa({ estado: 'separando', progresso: 0.6 })]))
       .mockImplementation(() => lenta([tarefa({ estado: 'separando', progresso: 0.7 })]))
-    render(<TelaInicio />)
+    render(<TelaInicio aba="fila" />)
     await esperar()
     await esperar(1500) // sai a 2ª consulta, que leva 2 s
     await esperar(1500)
@@ -305,7 +352,7 @@ describe('fila', () => {
       tarefa({ id: 't1', modo: 'pronta', estado: 'procurando versão pronta', progresso: 0.2 }),
       tarefa({ id: 't2', titulo: 'Yellow', estado: 'separando', progresso: 0.6, aviso: 'Nenhuma versão pronta serviu; separada com IA (modo Rápida).' }),
     ])
-    render(<TelaInicio />)
+    render(<TelaInicio aba="fila" />)
     expect(await screen.findByText('Procurando versão pronta')).toBeInTheDocument()
     expect(screen.getByText(/20% · Versão pronta/)).toBeInTheDocument()
     expect(screen.getByText('Nenhuma versão pronta serviu; separada com IA (modo Rápida).')).toBeInTheDocument()
@@ -319,7 +366,7 @@ describe('fila', () => {
     chamadas.fila.mockResolvedValue([tarefa({ id: 't2', titulo: 'Yesterday', estado: 'pronta', progresso: 1 })])
     chamadas.esquecerTarefa.mockResolvedValue(undefined)
     const usuario = userEvent.setup()
-    render(<TelaInicio />)
+    render(<TelaInicio aba="fila" />)
 
     expect(await screen.findByText('Vídeo indisponível.')).toBeInTheDocument()
     expect(screen.getByText('Erro')).toBeInTheDocument()
@@ -336,7 +383,7 @@ describe('fila', () => {
     chamadas.esquecerTarefa.mockResolvedValue(undefined)
     const confirmar = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
     const usuario = userEvent.setup()
-    render(<TelaInicio />)
+    render(<TelaInicio aba="fila" />)
 
     const cancelar = await screen.findByRole('button', { name: 'Cancelar Help!' })
     await usuario.click(cancelar)
@@ -356,17 +403,19 @@ describe('fila', () => {
     chamadas.esquecerTarefa.mockRejectedValue(new ErroApi(404, 'Essa tarefa não está na fila.'))
     const confirmar = vi.spyOn(window, 'confirm')
     const usuario = userEvent.setup()
-    render(<TelaInicio />)
+    render(<TelaInicio aba="fila" />)
     await usuario.click(await screen.findByRole('button', { name: 'Tirar Help! da fila' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Essa tarefa não está na fila.')
     expect(confirmar).not.toHaveBeenCalled()
     confirmar.mockRestore()
   })
 
-  it('a fila some quando está vazia', async () => {
-    render(<TelaInicio />)
-    await screen.findByText(/Nenhuma música ainda/)
-    expect(screen.queryByRole('heading', { name: 'Fila' })).not.toBeInTheDocument()
+  it('vazia, explica o que fazer e leva para a busca', async () => {
+    render(<TelaInicio aba="fila" />)
+    const vazio = (await screen.findByText('Nada na fila.')).closest('div')!
+    expect(within(vazio).getByRole('link', { name: 'Buscar' })).toHaveAttribute('href', '#/buscar')
+    // Sem nada em preparo, a aba não mostra contador
+    expect(screen.getByRole('link', { name: 'Fila' })).toBeInTheDocument()
   })
 })
 
@@ -435,7 +484,8 @@ describe('minhas músicas', () => {
 
   it('explica o que fazer quando não há músicas', async () => {
     render(<TelaInicio />)
-    expect(await screen.findByText(/Busque uma música acima/)).toBeInTheDocument()
+    expect(await screen.findByText(/Busque uma música e adicione na fila/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Buscar uma música' })).toHaveAttribute('href', '#/buscar')
   })
 
   it('sem a faixa original, a prévia vem do YouTube pelo servidor, a partir de um terço', async () => {

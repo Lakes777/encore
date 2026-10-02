@@ -1,5 +1,5 @@
 import { ArrowLeft, LoaderCircle, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, SlidersHorizontal, X } from 'lucide-react'
-import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent as EventoDeTecla } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as EventoDeTecla } from 'react'
 import { Abas, type Aba } from '../componentes/Abas.tsx'
 import { Capa } from '../componentes/Capa.tsx'
 import { ControleDesfoque } from '../componentes/ControleDesfoque.tsx'
@@ -19,6 +19,7 @@ import { usePlayer } from '../logica/usePlayer.ts'
 import { useSalvarVolumes } from '../logica/useSalvarVolumes.ts'
 import { estadoInicialDosVolumes, volumeEfetivo } from '../logica/volumes.ts'
 import { capaDaMusica } from '../logica/youtube.ts'
+import { useCoresDaCapa } from '../logica/cores.ts'
 import './TelaMusica.css'
 
 /** Quanto os botões de voltar/avançar pulam. */
@@ -126,6 +127,8 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
   // Sem matchMedia (como no jsdom), trata como tela larga: painel aberto.
   const [painelAberto, setPainelAberto] = useState(() => window.matchMedia?.(TELA_LARGA).matches ?? true)
   const botaoControles = useRef<HTMLButtonElement>(null)
+  // Destaques na cor da capa (o roxo padrão enquanto lê ou se a capa não deixar ler)
+  const paleta = useCoresDaCapa(capaDaMusica(musica))
 
   // Os volumes vão direto para os <audio>.
   useEffect(() => {
@@ -232,7 +235,13 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
   ].filter(Boolean)
 
   return (
-    <div className="tela-musica" ref={conteiner}>
+    <div
+      className={`tela-musica ${tocando ? 'tela-musica--tocando' : ''}`}
+      ref={conteiner}
+      data-cores={paleta ? 'capa' : 'padrao'}
+      style={paleta ? ({ '--roxo': paleta.forte, '--roxo-escuro': paleta.escuro, '--destaque': paleta.claro } as CSSProperties) : undefined}
+    >
+      <div className="tela-musica__brilho" aria-hidden />
       {urlFundo && (
         <>
           <div
@@ -338,7 +347,7 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
             </button>
             <button
               type="button"
-              className="botao botao--principal tela-musica__play"
+              className="botao botao--principal botao--vivo tela-musica__play"
               aria-label={tocando ? 'Pausar' : 'Tocar'}
               title={tocando ? 'Pausar (espaço)' : 'Tocar (espaço)'}
               disabled={!todasProntas}

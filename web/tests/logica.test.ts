@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, ErroApi, urlDaFaixa } from '../src/logica/api.ts'
 import { descricaoTom, formatarAtraso, formatarDuracao, formatarEstimativa, nomeDaMusica } from '../src/logica/formatar.ts'
 import { capaDaMusica, miniaturaDoVideo } from '../src/logica/youtube.ts'
-import { lerRota, linkDaMusica } from '../src/logica/rota.ts'
+import { lerRota, linkDaMusica, mesmaTela } from '../src/logica/rota.ts'
+import { contraste, corMarcante, paletaDaCor } from '../src/logica/cores.ts'
 import { ajustarVelocidade } from '../src/logica/velocidade.ts'
 import { batidasParaAgendar } from '../src/logica/metronomo.ts'
 import { preenchimento, silabas, tempoDasPalavras } from '../src/logica/palavras.ts'
@@ -14,10 +15,22 @@ describe('rota', () => {
     expect(lerRota(linkDaMusica('abcdef123456'))).toEqual({ tela: 'musica', id: 'abcdef123456' })
   })
 
-  it('qualquer outro hash volta para o início', () => {
-    for (const hash of ['', '#/', '#/musica/', '#/musica/../x', '#/musica/ABCDEF123456']) {
-      expect(lerRota(hash)).toEqual({ tela: 'inicio' })
+  it('lê a aba do início', () => {
+    expect(lerRota('#/buscar')).toEqual({ tela: 'inicio', aba: 'buscar' })
+    expect(lerRota('#/fila')).toEqual({ tela: 'inicio', aba: 'fila' })
+  })
+
+  it('qualquer outro hash volta para o início, em Minhas músicas', () => {
+    for (const hash of ['', '#/', '#/buscar/', '#/filas', '#/musica/', '#/musica/../x', '#/musica/ABCDEF123456']) {
+      expect(lerRota(hash)).toEqual({ tela: 'inicio', aba: 'musicas' })
     }
+  })
+
+  it('trocar de aba não troca de tela; trocar de música troca', () => {
+    expect(mesmaTela(lerRota('#/'), lerRota('#/fila'))).toBe(true)
+    expect(mesmaTela(lerRota('#/'), lerRota('#/musica/989ba3f6818c'))).toBe(false)
+    expect(mesmaTela(lerRota('#/musica/989ba3f6818c'), lerRota('#/musica/abcdef123456'))).toBe(false)
+    expect(mesmaTela(lerRota('#/musica/989ba3f6818c'), lerRota('#/musica/989ba3f6818c'))).toBe(true)
   })
 })
 
@@ -196,5 +209,46 @@ describe('nome e capa da música', () => {
     expect(capaDaMusica({ id_video: 'IHS3qJdxefY', fundo: { url: null } })).toBe('https://i.ytimg.com/vi/IHS3qJdxefY/hqdefault.jpg')
     expect(capaDaMusica({ id_video: '' })).toBeNull()
     expect(miniaturaDoVideo(null)).toBeNull()
+  })
+})
+
+describe('cores da capa', () => {
+  // Imagem falsa: lista de [r, g, b, quantos pixels]
+  function pixels(...cores: [number, number, number, number][]) {
+    const lista: number[] = []
+    for (const [r, g, b, n] of cores) for (let i = 0; i < n; i++) lista.push(r, g, b, 255)
+    return lista
+  }
+  const hexParaRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number]
+
+  it('acha a cor viva que mais aparece, ignorando preto, branco e cinza', () => {
+    const cor = corMarcante(pixels([0, 0, 0, 500], [250, 250, 250, 300], [128, 128, 128, 300], [200, 40, 40, 120], [40, 60, 200, 60]))
+    expect(cor).not.toBeNull()
+    const [r, g, b] = cor!
+    expect(r).toBeGreaterThan(g + 100)
+    expect(r).toBeGreaterThan(b + 100)
+  })
+
+  it('imagem quase sem cor fica com o padrão', () => {
+    expect(corMarcante(pixels([0, 0, 0, 900], [240, 240, 240, 100], [200, 40, 40, 2]))).toBeNull()
+    expect(corMarcante([])).toBeNull()
+  })
+
+  it('pixels transparentes não contam', () => {
+    expect(corMarcante([200, 40, 40, 0, 200, 40, 40, 0])).toBeNull()
+  })
+
+  it('os tons têm contraste para texto branco e sobre o fundo escuro, com qualquer cor', () => {
+    for (const cor of [[255, 230, 0], [0, 255, 255], [180, 0, 0], [20, 20, 120], [0, 200, 80], [255, 120, 200]] as const) {
+      const paleta = paletaDaCor(cor)
+      expect(contraste([255, 255, 255], hexParaRgb(paleta.forte))).toBeGreaterThanOrEqual(4.5)
+      expect(contraste([255, 255, 255], hexParaRgb(paleta.escuro))).toBeGreaterThanOrEqual(4.5)
+      expect(contraste(hexParaRgb(paleta.claro), [13, 14, 16])).toBeGreaterThanOrEqual(7)
+    }
+  })
+
+  it('contraste: preto e branco é 21, a mesma cor é 1', () => {
+    expect(contraste([0, 0, 0], [255, 255, 255])).toBeCloseTo(21)
+    expect(contraste([90, 40, 200], [90, 40, 200])).toBeCloseTo(1)
   })
 })

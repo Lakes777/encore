@@ -1,9 +1,9 @@
-import { Download, FileText, Image as IconeImagem, ListMusic, Mic, Play, Trash2, Upload } from 'lucide-react'
+import { Download, FileText, Image as IconeImagem, ListMusic, Mic, Play, Search, Trash2, Upload } from 'lucide-react'
 import { useRef, useState, type ChangeEvent } from 'react'
 import { api, ErroApi, urlDaExportacao, urlDaFaixa, urlDaPrevia } from '../logica/api.ts'
 import { descricaoTom, nomeDaMusica } from '../logica/formatar.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
-import { linkDaMusica } from '../logica/rota.ts'
+import { LINK_DA_ABA, linkDaMusica } from '../logica/rota.ts'
 import { NOME_ORIGINAL, type Musica } from '../logica/tipos.ts'
 import { capaDaMusica, inicioDaPrevia } from '../logica/youtube.ts'
 import { Capa } from './Capa.tsx'
@@ -134,7 +134,11 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
         <div className="cartao vazio">
           <ListMusic size={28} aria-hidden />
           <p>Nenhuma música ainda.</p>
-          <p className="texto-fraco">Busque uma música acima e adicione na fila: quando ficar pronta, ela aparece aqui.</p>
+          <p className="texto-fraco">Busque uma música e adicione na fila: quando ficar pronta, ela aparece aqui.</p>
+          <a className="botao botao--principal botao--vivo vazio__acao" href={LINK_DA_ABA.buscar}>
+            <Search size={16} aria-hidden />
+            Buscar uma música
+          </a>
         </div>
       )}
       {musicas && musicas.length > 0 && (
@@ -145,7 +149,7 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
             const original = musica.faixas.find((faixa) => faixa.nome === NOME_ORIGINAL)
             const nome = nomeDaMusica(musica)
             return (
-              <li key={musica.id} className="cartao musica">
+              <li key={musica.id} className="cartao musica spot">
                 <div className="musica__linha">
                   {/* A capa também abre a música (fora do Tab: o título já é o link) */}
                   <a href={linkDaMusica(musica.id)} className="musica__capa-link" tabIndex={-1} aria-hidden>

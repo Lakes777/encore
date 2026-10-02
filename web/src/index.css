@@ -28,6 +28,27 @@
   --radius-pequeno: 10px;
   /* As mesmas curvas do portfólio */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-texto: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Registradas como cor para poderem mudar com transição: na tela da música elas
+   passam do roxo para a cor da capa devagar, em vez de trocar de uma vez. */
+@property --roxo {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #7c4dcc;
+}
+
+@property --roxo-escuro {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #6a3db8;
+}
+
+@property --destaque {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #b18cf0;
 }
 
 *,
@@ -127,6 +148,25 @@ a {
   background: var(--roxo-escuro);
 }
 
+/* Botão principal com movimento (o mesmo do "Ver projetos" do portfólio): sobe e brilha na cor */
+.botao--vivo {
+  transition:
+    background 0.15s var(--ease-out),
+    border-color 0.15s var(--ease-out),
+    transform 0.2s var(--ease-out),
+    box-shadow 0.2s var(--ease-out);
+}
+
+.botao--vivo:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--roxo) 45%, transparent);
+}
+
+.botao--vivo:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
 /* Só o ícone: o nome vai em aria-label (e title, para aparecer ao passar o mouse). */
 .botao--icone {
   width: 40px;
@@ -169,6 +209,105 @@ input[type='range'] {
   transition: width 0.4s var(--ease-out);
 }
 
+/* ---------- cartões que saltam e brilham (como nos outros projetos) ---------- */
+
+/* O cartão sobe com o mouse em cima (só onde há mouse: no celular o toque o deixaria
+   "preso" levantado) e com o foco do teclado dentro dele */
+.cartao.spot {
+  transition:
+    transform 0.35s var(--ease-out),
+    border-color 0.35s,
+    box-shadow 0.35s;
+}
+
+.cartao.spot:has(:focus-visible) {
+  transform: translateY(-3px);
+  border-color: #3a3d44;
+  box-shadow: 0 16px 36px rgb(0 0 0 / 0.35);
+}
+
+@media (hover: hover) {
+  .cartao.spot:hover {
+    transform: translateY(-3px);
+    border-color: #3a3d44;
+    box-shadow: 0 16px 36px rgb(0 0 0 / 0.35);
+  }
+}
+
+/* Brilho que segue o mouse (posição em --mx/--my, do logica/brilho.ts):
+   uma luz suave no fundo e outra acendendo a borda perto do cursor */
+.spot {
+  position: relative;
+  isolation: isolate;
+}
+
+.spot::before,
+.spot::after {
+  content: '';
+  position: absolute;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s;
+}
+
+.spot::before {
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%), rgb(177 140 240 / 0.08), transparent 60%);
+}
+
+.spot::after {
+  inset: -1px;
+  padding: 1px;
+  z-index: 2;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgb(177 140 240 / 0.6), transparent 70%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+@media (hover: hover) {
+  .spot:hover::before,
+  .spot:hover::after {
+    opacity: 1;
+  }
+}
+
+/* ---------- troca de tela e de aba ---------- */
+
+/* A tela nova aparece num fade; a que sai some num fade rápido (150 ms, o SAIDA_DA_TELA do App) */
+.tela--entrando {
+  animation: aparecer 0.35s ease-out both;
+}
+
+.tela--saindo {
+  animation: sair 0.15s ease-out both;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sair {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Cada bloco sobe 10px e aparece, um depois do outro. "translate" e não "transform",
+   para não brigar com o salto dos cartões. */
+@keyframes surgir {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
 /* Ícone de "carregando" girando (parado para quem prefere menos movimento) */
 .girando {
   animation: girar 1s linear infinite;
@@ -180,6 +319,8 @@ input[type='range'] {
   }
 }
 
+/* Quem prefere menos animação (ex.: "Efeitos de animação" desligado no Windows):
+   nada se desloca, pula nem cresce; só os fades de troca de tela e de aba ficam */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -188,5 +329,26 @@ input[type='range'] {
     animation-duration: 0.01ms !important;
     /* Sem isto, animações infinitas (carregando) piscariam sem parar */
     animation-iteration-count: 1 !important;
+  }
+
+  .tela--entrando,
+  .aba-tela--entrando {
+    animation: aparecer 0.35s ease-out both !important;
+  }
+
+  .tela--saindo,
+  .aba-tela--saindo {
+    animation: sair 0.15s ease-out both !important;
+  }
+
+  .aba-tela--entrando .secao > *,
+  .aba-tela--entrando .lista > li {
+    animation: none !important;
+  }
+
+  .cartao.spot:hover,
+  .cartao.spot:has(:focus-visible),
+  .botao--vivo:hover:not(:disabled) {
+    transform: none;
   }
 }

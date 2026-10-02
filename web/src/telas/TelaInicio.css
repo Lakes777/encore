@@ -1,11 +1,22 @@
 /* Tela inicial: cabeçalho, busca, fila e a lista de músicas com capa. */
 
+/* Cabeçalho e menu ficam presos no alto ao rolar a lista */
+.inicio__cabeca {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: -24px -16px 0;
+  padding: 20px 16px 0;
+  border-bottom: 1px solid var(--border);
+  background: rgb(13 14 16 / 0.85);
+  backdrop-filter: blur(10px);
+}
+
 .inicio__topo {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
 }
 
 .inicio__logo {
@@ -29,13 +40,132 @@
   margin: 2px 0 0;
 }
 
+/* ---------- menu (abas da página, como na Lista de Animes) ---------- */
+
+.menu {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  padding-bottom: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.menu__link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: color 0.25s;
+}
+
+.menu__link:hover,
+.menu__link--ativo {
+  color: var(--text);
+}
+
+.menu__link:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Fundo do item ativo: desliza de um para o outro (posição medida no TelaInicio) */
+.menu__pilula {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: calc(100% - 10px);
+  border-radius: 999px;
+  background: rgb(177 140 240 / 0.12);
+  box-shadow: inset 0 0 0 1px rgb(177 140 240 / 0.22);
+  pointer-events: none;
+}
+
+.menu__pilula--anima {
+  transition:
+    transform 0.35s var(--ease-out),
+    width 0.35s var(--ease-out);
+}
+
+/* Quantas músicas estão sendo preparadas: pula quando entra mais uma */
+.menu__contador {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--roxo);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  animation: pular 0.6s var(--ease-out);
+}
+
+@keyframes pular {
+  0% {
+    transform: scale(0.6);
+  }
+  45% {
+    transform: scale(1.25) translateY(-2px);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* ---------- cada aba ---------- */
+
+/* Entrada da aba: o cabeçalho, depois o conteúdo, depois os cartões um a um */
+.aba-tela--entrando .secao > * {
+  animation: surgir 0.5s var(--ease-texto) both;
+  animation-delay: 0.05s;
+}
+
+.aba-tela--entrando .secao > :nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.aba-tela--entrando .secao > :nth-child(n + 3) {
+  animation-delay: 0.25s;
+}
+
+/* Os cartões da lista entram em cascata (e os que chegam depois, como novos
+   resultados da busca, também) */
+.aba-tela--entrando .lista > li {
+  animation: surgir 0.5s var(--ease-texto) both;
+  animation-delay: calc(0.2s + var(--ordem, 6) * 0.05s);
+}
+
+.lista > li:nth-child(1) { --ordem: 0; }
+.lista > li:nth-child(2) { --ordem: 1; }
+.lista > li:nth-child(3) { --ordem: 2; }
+.lista > li:nth-child(4) { --ordem: 3; }
+.lista > li:nth-child(5) { --ordem: 4; }
+.lista > li:nth-child(6) { --ordem: 5; }
+
+.aba-tela--saindo {
+  animation: sair 0.15s ease-out both;
+}
+
 .secao {
-  margin-top: 32px;
+  margin-top: 28px;
 }
 
 .secao h2 {
   margin: 0 0 12px;
   font-size: 1.25rem;
+}
+
+/* O título recebe o foco ao trocar de aba (para o leitor de tela), sem moldura */
+.secao h2[tabindex='-1']:focus {
+  outline: none;
 }
 
 .secao__cabecalho {
@@ -77,6 +207,11 @@
   padding: 32px 16px;
   text-align: center;
   color: var(--text-muted);
+}
+
+.vazio__acao {
+  margin-top: 14px;
+  text-decoration: none;
 }
 
 .vazio p:first-of-type {
@@ -204,6 +339,11 @@
   gap: 6px;
   color: var(--destaque);
   font-weight: 500;
+  text-decoration: none;
+}
+
+.resultado__na-fila:hover {
+  text-decoration: underline;
 }
 
 .previa {
@@ -268,11 +408,6 @@
 
 .musica {
   padding: 12px;
-  transition: border-color 0.15s var(--ease-out), background 0.15s var(--ease-out);
-}
-
-.musica:hover {
-  border-color: #3a3c43;
 }
 
 .musica__linha {
@@ -308,6 +443,18 @@
 
 .musica__capa-link:hover .musica__cantar {
   opacity: 1;
+}
+
+/* A capa chega um pouco mais perto quando o cartão sobe */
+.musica__capa img,
+.resultado__miniatura {
+  transition: transform 0.35s var(--ease-out);
+}
+
+@media (hover: hover) {
+  .musica:hover .musica__capa img {
+    transform: scale(1.08);
+  }
 }
 
 .musica__titulo {
