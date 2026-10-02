@@ -13,6 +13,28 @@
   background: var(--bg);
 }
 
+/* Carregando ou erro: tudo no meio da tela */
+.tela-musica__espera {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-bottom: 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.tela-musica__espera p {
+  margin: 0;
+}
+
+.tela-musica__espera .botao {
+  text-decoration: none;
+}
+
 /* Imagem de fundo desfocada; o scale esconde a borda clara que o blur deixa. */
 .tela-musica__fundo {
   position: absolute;

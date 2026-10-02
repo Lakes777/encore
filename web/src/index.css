@@ -169,11 +169,24 @@ input[type='range'] {
   transition: width 0.4s var(--ease-out);
 }
 
+/* Ícone de "carregando" girando (parado para quem prefere menos movimento) */
+.girando {
+  animation: girar 1s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    /* Sem isto, animações infinitas (carregando) piscariam sem parar */
+    animation-iteration-count: 1 !important;
   }
 }

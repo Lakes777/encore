@@ -1,4 +1,4 @@
-import { ArrowLeft, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, SlidersHorizontal, X } from 'lucide-react'
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent as EventoDeTecla } from 'react'
 import { Abas, type Aba } from '../componentes/Abas.tsx'
 import { Capa } from '../componentes/Capa.tsx'
@@ -62,7 +62,8 @@ export function TelaMusica({ id }: { id: string }) {
 
   if (carregamento.estado === 'carregando') {
     return (
-      <main className="pagina">
+      <main className="pagina tela-musica__espera">
+        <LoaderCircle size={28} className="girando" aria-hidden />
         <p className="texto-fraco" role="status">
           Carregando a música…
         </p>
@@ -72,11 +73,14 @@ export function TelaMusica({ id }: { id: string }) {
 
   if (carregamento.estado === 'erro') {
     return (
-      <main className="pagina">
+      <main className="pagina tela-musica__espera">
         <p className="erro" role="alert">
           {carregamento.mensagem}
         </p>
-        <a href={LINK_INICIO}>Voltar para o início</a>
+        <a href={LINK_INICIO} className="botao">
+          <ArrowLeft size={16} aria-hidden />
+          Voltar para o início
+        </a>
       </main>
     )
   }
