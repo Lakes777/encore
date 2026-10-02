@@ -1,4 +1,4 @@
-"""Fila de preparo das músicas: baixar -> separar (ou achar a versão pronta) -> analisar o tom.
+"""Fila de preparo das músicas: baixar -> separar (ou achar a versão pronta) -> analisar.
 
 Separar é pesado (usa toda a CPU ou a GPU), então a fila prepara UMA música
 por vez, numa thread separada, enquanto a API continua respondendo. Cada
@@ -6,6 +6,10 @@ tarefa guarda estado e progresso para a tela mostrar.
 
 Cancelar: o pedido só marca a tarefa. Toda atualização de progresso confere a
 marca e levanta Cancelada; a separação roda num processo à parte, que é encerrado.
+
+Analisar = tom e escala (obrigatórios) e, de quebra, BPM, batidas e trechos em que a voz
+principal soa (karaoke/ritmo.py). Esses extras só enfeitam a tela: se falharem, a música
+fica pronta sem eles (e `python -m karaoke.ritmo` completa depois).
 
 Cada música pronta fica numa pasta própria, com as faixas e um musica.json.
 """
@@ -20,7 +24,8 @@ from pathlib import Path
 from karaoke.analise import analisar_tom
 from karaoke.cancelamento import Cancelada
 from karaoke.download import baixar_audio
-from karaoke.faixas import INSTRUMENTAL, Faixa, Musica
+from karaoke.faixas import INSTRUMENTAL, VOZ_PRINCIPAL, Faixa, Musica
+from karaoke.ritmo import analisar_ritmo, trechos_com_voz
 from karaoke.separacao import MODOS, obter_modo, separar_em_processo
 from karaoke.versoes import MODO_PRONTA, preparar_versao_pronta
 
@@ -62,12 +67,14 @@ class Tarefa:
 
 class Fila:
     def __init__(self, pasta, pasta_modelos="modelos", baixar=baixar_audio, separar=separar_em_processo, analisar=analisar_tom,
-                 preparar_versao=preparar_versao_pronta, modo_reserva="rapido"):
+                 preparar_versao=preparar_versao_pronta, modo_reserva="rapido", ritmo=analisar_ritmo,
+                 voz=trechos_com_voz):
         """`modo_reserva`: com que modo separar quando nenhuma versão pronta serve."""
         self.pasta = Path(pasta)
         self.pasta_modelos = pasta_modelos
         self._baixar, self._separar, self._analisar = baixar, separar, analisar
         self._preparar_versao = preparar_versao
+        self._ritmo, self._voz = ritmo, voz
         self.modo_reserva = obter_modo(modo_reserva).nome
         self._tarefas = {}
         self._canceladas = set()  # ids que o usuário mandou parar
@@ -144,6 +151,7 @@ class Fila:
             # O instrumental dá um tom mais confiável (a voz desafina, o arranjo não)
             instrumental = next(f for f in faixas if f.nome == INSTRUMENTAL)
             tom, escala = self._analisar(pasta / instrumental.arquivo)
+            extras |= self._analisar_extras(pasta, faixas, instrumental)
 
             musica = Musica(tarefa.titulo, tarefa.artista, faixas + [Faixa(NOME_ORIGINAL, original.name, 0.0)],
                             tom, escala)
@@ -192,6 +200,30 @@ class Fila:
 
         return self._separar(original, pasta, modo, self.pasta_modelos, ao_mudar_etapa,
                              verificar=lambda: self._atualizar(tarefa))
+
+    def _analisar_extras(self, pasta, faixas, instrumental):
+        """BPM e batidas (do instrumental) e trechos com voz (da voz principal, se houver).
+
+        Cada análise que falhar fica de fora do musica.json, sem derrubar a música.
+        """
+        extras = {}
+        try:
+            ritmo = self._ritmo(pasta / instrumental.arquivo)
+            extras |= {"bpm": ritmo["bpm"], "batidas": ritmo["batidas"]}
+        except Cancelada:
+            raise
+        except Exception:
+            pass  # fica ausente; `python -m karaoke.ritmo` tenta de novo depois
+        # Na versão pronta não existe faixa só com a voz
+        voz = next((f for f in faixas if f.nome == VOZ_PRINCIPAL), None)
+        if voz is not None:
+            try:
+                extras["trechos_voz"] = self._voz(pasta / voz.arquivo)
+            except Cancelada:
+                raise
+            except Exception:
+                pass
+        return extras
 
     def _salvar(self, pasta, tarefa, musica, extras):
         dados = musica.para_dict() | {"id": tarefa.id, "id_video": tarefa.id_video, "duracao": tarefa.duracao} | extras

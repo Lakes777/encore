@@ -93,6 +93,7 @@ karaoke/
   download.py    # Baixa o áudio do vídeo em WAV
   separacao.py   # Separa voz principal, vocais de apoio e instrumental (modos Rápida e Alta)
   analise.py     # Descobre o tom e a escala
+  ritmo.py       # BPM, batidas e trechos com voz (python -m karaoke.ritmo completa as antigas)
   fila.py        # Prepara as músicas em segundo plano e salva cada uma em musica.json
   biblioteca.py  # Lista, abre e apaga as músicas prontas
   letras.py      # LRCLIB, limpeza do título do YouTube e leitura do formato .lrc
@@ -174,6 +175,7 @@ Fase 1: karaokê
 - [x] Telas (React): busca com prévia e seletor Rápida/Alta, fila, lista, tela da música (letra sincronizada, volumes, tocar a original, tela cheia, fundo com desfoque)
 - [x] Salvar os volumes de cada música (a tela salva sozinha, 0,7 s depois da última mudança)
 - [x] Cancelar a música que está sendo preparada (a separação roda num processo à parte, que é encerrado)
+- [x] BPM e batidas (do instrumental) e os trechos em que a voz principal soa, para acender as palavras da letra; `python -m karaoke.ritmo <pasta>` completa as músicas antigas
 - [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 
 Fase 2: versões prontas
