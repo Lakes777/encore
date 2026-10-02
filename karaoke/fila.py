@@ -22,6 +22,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from karaoke.analise import analisar_tom
+from karaoke.arquivos import gravar_de_uma_vez
 from karaoke.cancelamento import Cancelada
 from karaoke.download import baixar_audio
 from karaoke.faixas import INSTRUMENTAL, VOZ_PRINCIPAL, Faixa, Musica
@@ -227,9 +228,7 @@ class Fila:
 
     def _salvar(self, pasta, tarefa, musica, extras):
         dados = musica.para_dict() | {"id": tarefa.id, "id_video": tarefa.id_video, "duracao": tarefa.duracao} | extras
-        provisorio = pasta / "musica.json.tmp"
-        provisorio.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
-        provisorio.replace(pasta / "musica.json")  # troca de uma vez: nunca fica um JSON pela metade
+        gravar_de_uma_vez(pasta / "musica.json", json.dumps(dados, ensure_ascii=False, indent=2))
 
     def iniciar(self):
         """Começa a thread que processa a fila em segundo plano."""

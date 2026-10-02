@@ -4,6 +4,7 @@ import threading
 import pytest
 
 from karaoke.analise import PERFIL_MAIOR, PERFIL_MENOR, analisar_tom, tom_do_cromagrama
+from karaoke.cancelamento import Cancelada
 from karaoke.faixas import INSTRUMENTAL, NOTAS, VOCAIS_DE_APOIO, VOZ_PRINCIPAL, Faixa, Musica
 from karaoke.fila import CANCELANDO, ERRO, NA_FILA, PRONTA, Fila
 from karaoke.versoes import MODO_PRONTA, Comparacao, VersaoPronta
@@ -161,6 +162,17 @@ def test_cancelar_durante_as_analises_extras_apaga_a_musica(tmp_path):
     fila.processar_proxima()
     assert fila.tarefas() == []
     assert not (tmp_path / tarefa.id).exists()
+
+
+def test_cancelada_no_ritmo_para_antes_de_medir_a_voz(tmp_path):
+    def ritmo_cancelado(caminho):
+        fila.esquecer(tarefa.id)
+        raise Cancelada()
+
+    fila = fila_falsa(tmp_path, ritmo=ritmo_cancelado, voz=lambda caminho: pytest.fail("não devia medir a voz"))
+    tarefa = fila.adicionar("2Q_ZzBGPdqE", "Help!")
+    fila.processar_proxima()
+    assert fila.tarefas() == []
 
 
 def test_progresso_so_avanca(tmp_path):

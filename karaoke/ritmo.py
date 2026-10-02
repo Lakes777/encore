@@ -18,6 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
+from karaoke.arquivos import gravar_de_uma_vez
 from karaoke.faixas import INSTRUMENTAL, VOZ_PRINCIPAL
 
 TAXA = 22050
@@ -209,9 +210,7 @@ def completar_musica(pasta, refazer=False, ritmo=analisar_ritmo, voz=trechos_com
         # Lê de novo antes de gravar: a análise demora, e nesse meio tempo o servidor pode
         # ter salvado um volume ou a letra nesse mesmo arquivo
         dados = _ler_json(arquivo) | novos
-        provisorio = pasta / f"{ARQUIVO_DADOS}.tmp"
-        provisorio.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
-        provisorio.replace(arquivo)  # troca de uma vez: o servidor nunca lê um JSON pela metade
+        gravar_de_uma_vez(arquivo, json.dumps(dados, ensure_ascii=False, indent=2))
     return dados, feito, erros
 
 

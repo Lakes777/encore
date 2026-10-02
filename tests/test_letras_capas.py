@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -205,6 +207,33 @@ def test_atraso_fora_do_limite_e_recusado(tmp_path, atraso):
     musica_salva(tmp_path)
     with pytest.raises(ValueError):
         Biblioteca(tmp_path).definir_atraso_letra(ID_MUSICA, atraso)
+
+
+def test_gravacoes_ao_mesmo_tempo_nao_estragam_nem_perdem_mudancas(tmp_path):
+    musica_salva(tmp_path)
+    biblioteca = Biblioteca(tmp_path)
+    erros = []
+
+    def mexer(numero):
+        try:
+            for vez in range(50):
+                if numero % 2:
+                    biblioteca.definir_atraso_letra(ID_MUSICA, vez / 10)
+                else:
+                    biblioteca.definir_volumes(ID_MUSICA, {"instrumental.wav": vez / 50})
+        except Exception as erro:  # qualquer erro conta
+            erros.append(erro)
+
+    threads = [threading.Thread(target=mexer, args=(numero,)) for numero in range(4)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert erros == []
+    dados = biblioteca.obter(ID_MUSICA)  # JSON inteiro, com as duas mudanças
+    assert dados["atraso_letra"] == 4.9
+    assert {f["arquivo"]: f["volume"] for f in dados["faixas"]}["instrumental.wav"] == 0.98
+    assert not list((tmp_path / ID_MUSICA).glob(".*.tmp"))
 
 
 def test_letra_vazia_nao_e_salva(tmp_path):

@@ -3,8 +3,11 @@
 import json
 import re
 import shutil
+import threading
+from functools import wraps
 from pathlib import Path
 
+from karaoke.arquivos import gravar_de_uma_vez
 from karaoke.faixas import conferir_volume
 from karaoke.letras import ler_lrc
 
@@ -16,9 +19,20 @@ ATRASO_MAXIMO = 10  # segundos que a letra pode ser deslocada, para frente ou pa
 _ID = re.compile(r"^[0-9a-f]{12}$")  # mesmo formato dos ids que a fila cria
 
 
+def _travado(metodo):
+    """Ler, mudar e gravar o musica.json sem outro pedido no meio (as rotas rodam em paralelo):
+    sem isto, salvar os volumes e a sincronia ao mesmo tempo fazia um perder a mudança do outro."""
+    @wraps(metodo)
+    def travado(self, *args, **kwargs):
+        with self._trava:
+            return metodo(self, *args, **kwargs)
+    return travado
+
+
 class Biblioteca:
     def __init__(self, pasta):
         self.pasta = Path(pasta)
+        self._trava = threading.Lock()
 
     def _pasta_da(self, id_musica):
         if not _ID.match(id_musica):
@@ -57,23 +71,18 @@ class Biblioteca:
         return caminho
 
     def _gravar(self, id_musica, dados):
-        pasta = self._pasta_da(id_musica)
-        provisorio = pasta / f"{ARQUIVO_DADOS}.tmp"
-        provisorio.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
-        provisorio.replace(pasta / ARQUIVO_DADOS)
+        gravar_de_uma_vez(self._pasta_da(id_musica) / ARQUIVO_DADOS, json.dumps(dados, ensure_ascii=False, indent=2))
 
     # ---------- letra ----------
 
+    @_travado
     def salvar_letra(self, id_musica, texto_lrc, id_lrclib):
         """Guarda a letra escolhida (troca a anterior) e devolve os versos."""
         dados = self.obter(id_musica)
         versos = ler_lrc(texto_lrc)
         if not versos:
             raise ValueError("A letra está vazia.")
-        pasta = self._pasta_da(id_musica)
-        provisorio = pasta / f"{ARQUIVO_LETRA}.tmp"
-        provisorio.write_text(texto_lrc, encoding="utf-8")
-        provisorio.replace(pasta / ARQUIVO_LETRA)
+        gravar_de_uma_vez(self._pasta_da(id_musica) / ARQUIVO_LETRA, texto_lrc)
         dados["tem_letra"] = True
         dados["letra_sincronizada"] = versos[0]["tempo"] is not None
         dados["letra_id"] = id_lrclib
@@ -88,6 +97,7 @@ class Biblioteca:
         except FileNotFoundError:
             raise KeyError("letra") from None
 
+    @_travado
     def apagar_letra(self, id_musica):
         dados = self.obter(id_musica)
         (self._pasta_da(id_musica) / ARQUIVO_LETRA).unlink(missing_ok=True)
@@ -96,6 +106,7 @@ class Biblioteca:
             dados.pop(campo, None)
         self._gravar(id_musica, dados)
 
+    @_travado
     def definir_atraso_letra(self, id_musica, atraso):
         """Segundos somados aos tempos da letra (positivo = a voz vem depois); None = o site estima sozinho."""
         if atraso is not None:
@@ -112,6 +123,7 @@ class Biblioteca:
 
     # ---------- volumes ----------
 
+    @_travado
     def definir_volumes(self, id_musica, volumes):
         """Guarda o volume (0 a 1) de algumas faixas, pelo arquivo, e devolve todas as faixas.
 
@@ -131,6 +143,7 @@ class Biblioteca:
 
     # ---------- fundo ----------
 
+    @_travado
     def definir_fundo(self, id_musica, url, desfoque=DESFOQUE_PADRAO):
         """Imagem de fundo da tela da música (url None = sem imagem) e o desfoque dela."""
         if url is not None and not url.startswith("https://"):
@@ -142,6 +155,7 @@ class Biblioteca:
         self._gravar(id_musica, dados)
         return dados["fundo"]
 
+    @_travado
     def apagar(self, id_musica):
         pasta = self._pasta_da(id_musica)
         if not (pasta / ARQUIVO_DADOS).exists():

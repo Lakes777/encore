@@ -234,7 +234,7 @@ def test_completa_musica_separada(tmp_path):
     assert gravado == dados
     assert (gravado["bpm"], gravado["batidas"], gravado["trechos_voz"]) == (95.7, [0.5, 1.127], [[1.0, 2.5]])
     assert gravado["tom"] == "A"  # o resto continua lá
-    assert not (pasta / "musica.json.tmp").exists()
+    assert not list(pasta.glob(".*.tmp"))
 
 
 def test_versao_pronta_so_ganha_o_ritmo(tmp_path):
