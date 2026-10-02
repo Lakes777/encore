@@ -189,7 +189,7 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
       <div className="tela-musica__corpo">
         <section className="tela-musica__letra" aria-label="Letra da música">
           {versos && versos.length > 0 ? (
-            <Letra versos={versosNoTempo ?? versos} tempo={tempo} aoPular={player.pular} />
+            <Letra versos={versosNoTempo ?? versos} tempo={tempo} aoPular={player.pular} trechos={musica.trechos_voz} />
           ) : (
             <div className="tela-musica__sem-letra">
               <p>{erroLetra ?? 'Essa música ainda não tem letra.'}</p>

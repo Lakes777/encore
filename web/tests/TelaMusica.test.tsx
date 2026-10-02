@@ -316,6 +316,21 @@ describe('letra', () => {
     expect(screen.getByRole('button', { name: "But she doesn't have a lot to say" })).not.toHaveAttribute('aria-current')
   })
 
+  it('acende as palavras do verso atual conforme a voz', async () => {
+    // Verso 2 (de 4 a 8): voz de 4 a 6, dividida entre 7 palavras (8 sílabas)
+    await abrir(umaMusica({ trechos_voz: [[4, 6]] }))
+    liberarFaixas()
+    irPara(5)
+    const verso = screen.getByRole('button', { name: "But she doesn't have a lot to say" })
+    const palavras = [...verso.querySelectorAll<HTMLElement>('.letra__palavra')]
+    expect(palavras.map((p) => p.textContent)).toEqual(['But', 'she', "doesn't", 'have', 'a', 'lot', 'to', 'say'])
+    const preenchidos = palavras.map((p) => p.style.getPropertyValue('--preenchido'))
+    expect(preenchidos.slice(0, 3)).toEqual(['100%', '100%', '100%']) // But she doesn't: 4 sílabas = 1 s
+    expect(preenchidos.slice(4)).toEqual(['0%', '0%', '0%', '0%'])
+    // Os outros versos ficam inteiros, sem palavras separadas
+    expect(screen.getByRole('button', { name: 'Her Majesty is a pretty nice girl' }).querySelector('.letra__palavra')).toBeNull()
+  })
+
   it('clicar num verso pula a música para ele', async () => {
     await abrir()
     liberarFaixas()

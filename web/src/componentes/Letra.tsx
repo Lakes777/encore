@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
-import { indiceDoVersoAtual, letraSincronizada } from '../logica/letra.ts'
+import { Fragment, useEffect, useMemo, useRef, type CSSProperties } from 'react'
+import { indiceDoVersoAtual, letraSincronizada, type TrechoDeVoz } from '../logica/letra.ts'
+import { preenchimento, tempoDasPalavras } from '../logica/palavras.ts'
 import type { Verso } from '../logica/tipos.ts'
 
 /** Quantos versos antes e depois do atual ficam "perto" (menos apagados). */
@@ -9,16 +10,29 @@ interface Props {
   versos: readonly Verso[]
   tempo: number
   aoPular: (segundos: number) => void
+  /** Onde a voz principal soa: guia a palavra que acende (sem isto, estima pelo ritmo médio). */
+  trechos?: readonly TrechoDeVoz[]
 }
+
+const SEM_TRECHOS: TrechoDeVoz[] = []
 
 /**
  * Letra sincronizada: o verso atual em destaque e centralizado; clicar num verso
  * pula a música para ele. Letra sem tempo: o texto inteiro, parado e rolável.
  */
-export function Letra({ versos, tempo, aoPular }: Props) {
+export function Letra({ versos, tempo, aoPular, trechos = SEM_TRECHOS }: Props) {
   const caixa = useRef<HTMLDivElement>(null)
   const sincronizada = letraSincronizada(versos)
   const atual = sincronizada ? indiceDoVersoAtual(versos, tempo) : -1
+
+  // Palavras do verso atual: o verso vai até o começo do próximo que tenha tempo
+  const palavras = useMemo(() => {
+    const verso = versos[atual]
+    if (verso?.tempo == null) return null
+    const inicio = verso.tempo
+    const proximo = versos.slice(atual + 1).find((v) => v.tempo != null && v.tempo > inicio)
+    return tempoDasPalavras(verso.texto, inicio, proximo?.tempo ?? null, trechos)
+  }, [versos, atual, trechos])
 
   // Rola a caixa (e não a página) para deixar o verso atual no meio.
   useEffect(() => {
@@ -61,7 +75,19 @@ export function Letra({ versos, tempo, aoPular }: Props) {
                   title="Pular para este verso"
                   onClick={() => aoPular(inicio)}
                 >
-                  {verso.texto || '…'}
+                  {indice === atual && palavras && palavras.length > 0
+                    ? palavras.map((palavra, posicao) => (
+                        <Fragment key={posicao}>
+                          {posicao > 0 && ' '}
+                          <span
+                            className="letra__palavra"
+                            style={{ '--preenchido': `${Math.round(preenchimento(palavra, tempo) * 100)}%` } as CSSProperties}
+                          >
+                            {palavra.texto}
+                          </span>
+                        </Fragment>
+                      ))
+                    : verso.texto || '…'}
                 </button>
               )}
             </li>

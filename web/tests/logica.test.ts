@@ -4,6 +4,7 @@ import { descricaoTom, formatarDuracao, formatarEstimativa } from '../src/logica
 import { lerRota, linkDaMusica } from '../src/logica/rota.ts'
 import { ajustarVelocidade } from '../src/logica/velocidade.ts'
 import { batidasParaAgendar } from '../src/logica/metronomo.ts'
+import { preenchimento, silabas, tempoDasPalavras } from '../src/logica/palavras.ts'
 import { deslocarVersos, estimarAtraso, type TrechoDeVoz } from '../src/logica/letra.ts'
 
 describe('rota', () => {
@@ -127,5 +128,37 @@ describe('metrônomo', () => {
 
   it('no fim da música não agenda nada', () => {
     expect(batidasParaAgendar(batidas, 3.5, 0.15, -1)).toEqual({ agendar: [], proxima: 5 })
+  })
+})
+
+describe('palavra que acende', () => {
+  it('conta as sílabas pelos grupos de vogais (aproximado: o "e" mudo do inglês conta)', () => {
+    expect(['Help!', 'nobody', 'somebody', 'não', 'coração', '(Help)', '...'].map(silabas)).toEqual([1, 3, 4, 1, 3, 1, 1])
+  })
+
+  it('divide o tempo de voz pelas sílabas e pula o buraco sem voz', () => {
+    // "I need nobody": 1 + 1 + 3 sílabas; voz de 10 a 11 e de 12 a 13,5 (pausa no meio)
+    const palavras = tempoDasPalavras('I need nobody', 10, 15, [[9, 11], [12, 13.5], [14.98, 15.5]])
+    expect(palavras.map((p) => p.texto)).toEqual(['I', 'need', 'nobody'])
+    expect(palavras[0].inicio).toBeCloseTo(10)
+    expect(palavras[0].fim).toBeCloseTo(10.5) // 2,5 s de voz no verso: 1/5 = 0,5 s
+    expect(palavras[1].inicio).toBeCloseTo(10.5)
+    expect(palavras[1].fim).toBeCloseTo(11)
+    expect(palavras[2].inicio).toBeCloseTo(12) // começa quando a voz volta, não no buraco
+    expect(palavras[2].fim).toBeCloseTo(13.5) // o pedacinho de 0,02 s no fim é ruído
+  })
+
+  it('sem voz medida no verso usa o ritmo médio, sem passar do próximo verso', () => {
+    const palavras = tempoDasPalavras('Help me', 5, 20, [])
+    expect(palavras[0].inicio).toBeCloseTo(5)
+    expect(palavras[1].fim).toBeCloseTo(5.56) // 2 sílabas x 0,28 s
+    expect(tempoDasPalavras('Help me', 5, 5.3, [])[1].fim).toBeCloseTo(5.3)
+    expect(tempoDasPalavras('Help me', 5, null, [[5, 6]])[1].fim).toBeCloseTo(5.56) // último verso
+    expect(tempoDasPalavras('   ', 5, 6, [])).toEqual([])
+  })
+
+  it('preenche de 0 a 1 ao longo da palavra', () => {
+    const palavra = { texto: 'Help', inicio: 2, fim: 3 }
+    expect([1, 2.25, 3, 4].map((t) => preenchimento(palavra, t))).toEqual([0, 0.25, 1, 1])
   })
 })

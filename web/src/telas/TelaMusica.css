@@ -158,6 +158,18 @@ button.letra__verso:hover {
   font-weight: 700;
 }
 
+/* Palavra que acende: o roxo enche a palavra da esquerda para a direita conforme é cantada */
+.letra__palavra {
+  background-image: linear-gradient(
+    90deg,
+    var(--destaque) var(--preenchido, 0%),
+    var(--text) var(--preenchido, 0%)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .letra--parada {
   text-align: left;
 }
