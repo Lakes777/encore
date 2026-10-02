@@ -8,6 +8,7 @@ import { emAndamento } from '../logica/fila.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import { LINK_DA_ABA, LINK_LOBBY, type AbaInicio } from '../logica/rota.ts'
 import type { EstadoTarefa, Musica, Sistema, Tarefa } from '../logica/tipos.ts'
+import { TelaLobby } from './TelaLobby.tsx'
 import './TelaInicio.css'
 
 /** De quanto em quanto tempo a fila é consultada enquanto alguma tarefa anda. */
@@ -17,19 +18,21 @@ export const INTERVALO_DA_FILA = 1500
 export const SAIDA_DA_ABA = 150
 
 const ABAS: { id: AbaInicio; rotulo: string }[] = [
+  { id: 'lobby', rotulo: 'Início' },
   { id: 'musicas', rotulo: 'Minhas músicas' },
   { id: 'buscar', rotulo: 'Buscar' },
   { id: 'fila', rotulo: 'Fila' },
 ]
 
 interface Props {
-  /** Aba aberta (vem do endereço: #/musicas, #/buscar ou #/fila). */
+  /** Aba aberta (vem do endereço: #/, #/musicas, #/buscar ou #/fila). */
   aba?: AbaInicio
 }
 
 /**
- * Tela inicial em três abas: as músicas prontas, a busca no YouTube e a fila de preparo.
- * As três ficam montadas (só escondidas), então a busca e a prévia não se perdem ao trocar.
+ * Tela inicial em abas: a apresentação (lobby), as músicas prontas, a busca no YouTube
+ * e a fila de preparo. O cabeçalho e o menu ficam parados; só o conteúdo troca.
+ * As abas ficam montadas (só escondidas), então a busca e a prévia não se perdem ao trocar.
  */
 export function TelaInicio({ aba = 'musicas' }: Props) {
   const [sistema, setSistema] = useState<Sistema | null>(null)
@@ -153,7 +156,7 @@ export function TelaInicio({ aba = 'musicas' }: Props) {
   useEffect(() => {
     if (abaComFoco.current === abaExibida) return
     abaComFoco.current = abaExibida
-    const titulo = paineis.current.get(abaExibida)?.querySelector('h2')
+    const titulo = paineis.current.get(abaExibida)?.querySelector<HTMLElement>('h1, h2')
     if (!titulo) return
     titulo.tabIndex = -1
     titulo.focus({ preventScroll: true })
@@ -163,19 +166,33 @@ export function TelaInicio({ aba = 'musicas' }: Props) {
   const menu = useRef<HTMLElement>(null)
   const [pilula, setPilula] = useState<{ x: number; largura: number; animar: boolean } | null>(null)
   const pilulaMedida = useRef(false)
+  const abaDaPilula = useRef(aba)
+  const medirPilula = useCallback((animar: boolean) => {
+    const link = menu.current?.querySelector<HTMLElement>(`[data-aba="${abaDaPilula.current}"]`)
+    if (!link) return
+    setPilula({ x: link.offsetLeft, largura: link.offsetWidth, animar })
+    pilulaMedida.current = true
+  }, [])
   useLayoutEffect(() => {
-    function medir(animar: boolean) {
-      const link = menu.current?.querySelector<HTMLElement>(`[data-aba="${aba}"]`)
-      if (!link) return
-      setPilula({ x: link.offsetLeft, largura: link.offsetWidth, animar })
-      pilulaMedida.current = true
-    }
+    abaDaPilula.current = aba
     // Na primeira medida a pílula já nasce no lugar; depois desliza
-    medir(pilulaMedida.current)
-    const aoRedimensionar = () => medir(false)
+    medirPilula(pilulaMedida.current)
+  }, [aba, medirPilula])
+  // Mede de novo, sem deslizar, quando a janela muda ou um link muda de largura
+  // (o contador da Fila aparece, a fonte termina de carregar)
+  useEffect(() => {
+    const aoRedimensionar = () => medirPilula(false)
     window.addEventListener('resize', aoRedimensionar)
-    return () => window.removeEventListener('resize', aoRedimensionar)
-  }, [aba])
+    let observador: ResizeObserver | undefined
+    if (typeof ResizeObserver !== 'undefined' && menu.current) {
+      observador = new ResizeObserver(aoRedimensionar)
+      for (const link of menu.current.querySelectorAll('a')) observador.observe(link)
+    }
+    return () => {
+      window.removeEventListener('resize', aoRedimensionar)
+      observador?.disconnect()
+    }
+  }, [medirPilula])
 
   // O contador da Fila pula quando entra uma música nova
   const naFila = tarefas.filter((t) => emAndamento(t.estado)).length
@@ -203,6 +220,8 @@ export function TelaInicio({ aba = 'musicas' }: Props) {
     )
   }
 
+  const TituloDoTopo = abaExibida === 'lobby' ? 'p' : 'h1'
+
   return (
     <main className="pagina inicio">
       <div className="inicio__cabeca">
@@ -212,11 +231,12 @@ export function TelaInicio({ aba = 'musicas' }: Props) {
             <Mic size={22} aria-hidden />
           </a>
           <div>
-            <h1 className="inicio__titulo">
+            {/* Um h1 só por tela: no lobby o h1 é o título grande dele */}
+            <TituloDoTopo className="inicio__titulo">
               <a className="inicio__marca" href={LINK_LOBBY} title="Voltar para a apresentação">
                 Karaokê
               </a>
-            </h1>
+            </TituloDoTopo>
             <p className="texto-fraco inicio__lema">Busque uma música, tire a voz e cante por cima.</p>
           </div>
         </header>
@@ -247,11 +267,17 @@ export function TelaInicio({ aba = 'musicas' }: Props) {
           ))}
         </nav>
       </div>
-      {erroSistema && (
-        <p className="erro" role="alert">
-          {erroSistema}
-        </p>
+      {/* Erros de rede fora das abas: um alerta numa aba escondida não seria anunciado */}
+      {[erroSistema, erroMusicas, erroFila].map(
+        (erro, indice) =>
+          erro && (
+            <p key={indice} className="erro" role="alert">
+              {erro}
+            </p>
+          ),
       )}
+
+      {painel('lobby', <TelaLobby prontas={musicas ? musicas.length : null} />)}
 
       {painel(
         'musicas',
@@ -277,14 +303,7 @@ export function TelaInicio({ aba = 'musicas' }: Props) {
 
       {painel(
         'fila',
-        <>
-          {erroFila && (
-            <p className="erro" role="alert">
-              {erroFila}
-            </p>
-          )}
-          <Fila tarefas={tarefas} sistema={sistema} aoRemover={aoRemover} aoCancelar={aoCancelar} />
-        </>,
+        <Fila tarefas={tarefas} sistema={sistema} aoRemover={aoRemover} aoCancelar={aoCancelar} />,
       )}
     </main>
   )

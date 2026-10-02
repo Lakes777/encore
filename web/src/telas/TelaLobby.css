@@ -4,8 +4,9 @@
 
 .lobby {
   position: relative;
-  min-height: 100vh;
-  min-height: 100svh;
+  /* Ocupa o resto da janela abaixo do cabeçalho e do menu */
+  min-height: calc(100vh - 160px);
+  min-height: calc(100svh - 160px);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -109,11 +110,11 @@
 .lobby__conteudo {
   width: 100%;
   max-width: 720px;
-  padding: 48px 16px;
+  padding: 40px 0;
   text-align: center;
 }
 
-/* Entrada em cascata: logo, título, frase, destaques, botões, números */
+/* Entrada em cascata: título, frase, destaques, botões, números */
 .lobby__conteudo > * {
   animation: surgir 0.6s var(--ease-texto) both;
 }
@@ -122,21 +123,9 @@
 .lobby__conteudo > :nth-child(3) { animation-delay: 0.16s; }
 .lobby__conteudo > :nth-child(4) { animation-delay: 0.24s; }
 .lobby__conteudo > :nth-child(5) { animation-delay: 0.32s; }
-.lobby__conteudo > :nth-child(6) { animation-delay: 0.4s; }
-
-.lobby__logo {
-  display: inline-grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: var(--roxo);
-  color: #fff;
-  box-shadow: 0 12px 32px rgb(124 77 204 / 0.35);
-}
 
 .lobby__titulo {
-  margin: 20px 0 0;
+  margin: 0;
   font-size: clamp(2.6rem, 9vw, 4.25rem);
   font-weight: 800;
   line-height: 1.05;
@@ -248,7 +237,7 @@
   }
 
   .lobby__conteudo {
-    padding: 40px 16px;
+    padding: 32px 0;
   }
 
   .lobby__frase {
@@ -283,10 +272,3 @@
   }
 }
 
-/* Menos movimento: as faixas ficam paradas e o conteúdo só aparece (o fade da tela) */
-@media (prefers-reduced-motion: reduce) {
-  .lobby__trilho,
-  .lobby__conteudo > * {
-    animation: none !important;
-  }
-}

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api, ErroApi } from '../src/logica/api.ts'
 import type { Capa, Musica, ResultadoBusca, Sistema, Tarefa, VersaoLetra } from '../src/logica/tipos.ts'
-import { TelaInicio } from '../src/telas/TelaInicio.tsx'
+import { SAIDA_DA_ABA, TelaInicio } from '../src/telas/TelaInicio.tsx'
 
 // Troca as chamadas de rede por funções falsas; o ErroApi continua o de verdade.
 vi.mock('../src/logica/api.ts', async (original) => {
@@ -122,6 +122,31 @@ describe('abas', () => {
     rerender(<TelaInicio aba="buscar" />)
     expect(await screen.findByRole('heading', { name: 'Help! (Remastered 2009)' })).toBeVisible()
     expect(screen.getByRole('searchbox', { name: /nome da música/i })).toHaveValue('help')
+  })
+
+  it('voltar para a mesma aba durante o fade continua nela e não fecha a prévia', async () => {
+    chamadas.musicas.mockResolvedValue([musica()])
+    const usuario = userEvent.setup()
+    const { rerender } = render(<TelaInicio aba="musicas" />)
+    await usuario.click(await screen.findByRole('button', { name: 'Ouvir a prévia de Help!' }))
+    expect(screen.getByLabelText('Prévia de Help!')).toBeInTheDocument()
+
+    // Minhas músicas -> Buscar -> Minhas músicas, antes do fade de saída acabar
+    rerender(<TelaInicio aba="buscar" />)
+    rerender(<TelaInicio aba="musicas" />)
+    await act(() => new Promise((pronto) => setTimeout(pronto, SAIDA_DA_ABA + 100)))
+    expect(screen.getByRole('heading', { name: 'Minhas músicas' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Minhas músicas' }).closest('.aba-tela')).toHaveClass('aba-tela--entrando')
+    expect(screen.getByLabelText('Prévia de Help!')).toBeInTheDocument()
+  })
+
+  it('os erros de rede aparecem em qualquer aba, fora dos painéis', async () => {
+    chamadas.musicas.mockRejectedValue(new ErroApi(0, 'O servidor do karaokê não respondeu.'))
+    chamadas.fila.mockRejectedValue(new ErroApi(500, 'A fila não respondeu.'))
+    render(<TelaInicio aba="buscar" />)
+    const alertas = await screen.findAllByRole('alert')
+    expect(alertas.map((alerta) => alerta.textContent)).toEqual(['O servidor do karaokê não respondeu.', 'A fila não respondeu.'])
+    for (const alerta of alertas) expect(alerta.closest('.aba-tela')).toBeNull()
   })
 
   it('o contador da Fila mostra quantas estão em preparo', async () => {

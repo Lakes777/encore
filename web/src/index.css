@@ -59,6 +59,8 @@
 
 body {
   margin: 0;
+  /* O fundo do cabeçalho tem 100vw, que conta a barra de rolagem: sem rolagem de lado */
+  overflow-x: clip;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
@@ -86,6 +88,14 @@ a {
 :focus-visible {
   outline: 2px solid var(--destaque);
   outline-offset: 2px;
+}
+
+/* Títulos (e a tela) que recebem o foco ao trocar de tela ou de aba, para o leitor
+   de tela anunciar onde está: sem moldura, porque não são clicáveis */
+.tela[tabindex='-1']:focus,
+h1[tabindex='-1']:focus,
+h2[tabindex='-1']:focus {
+  outline: none;
 }
 
 .pagina {
@@ -341,14 +351,19 @@ input[type='range'] {
     animation: sair 0.15s ease-out both !important;
   }
 
+  /* A cascata de entrada e as faixas de pranchas do lobby ficam paradas */
   .aba-tela--entrando .secao > *,
-  .aba-tela--entrando .lista > li {
+  .aba-tela--entrando .lista > li,
+  .lobby__trilho,
+  .lobby__conteudo > * {
     animation: none !important;
   }
 
   .cartao.spot:hover,
   .cartao.spot:has(:focus-visible),
-  .botao--vivo:hover:not(:disabled) {
-    transform: none;
+  .botao--vivo:hover:not(:disabled),
+  .musica:hover .musica__capa img,
+  .inicio__logo:hover {
+    transform: none !important;
   }
 }

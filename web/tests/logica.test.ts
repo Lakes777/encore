@@ -23,22 +23,22 @@ describe('rota', () => {
   })
 
   it('o hash vazio e #/ abrem o lobby', () => {
-    expect(lerRota('')).toEqual({ tela: 'lobby' })
-    expect(lerRota('#/')).toEqual({ tela: 'lobby' })
-    expect(lerRota(LINK_LOBBY)).toEqual({ tela: 'lobby' })
+    expect(lerRota('')).toEqual({ tela: 'inicio', aba: 'lobby' })
+    expect(lerRota('#/')).toEqual({ tela: 'inicio', aba: 'lobby' })
+    expect(lerRota(LINK_LOBBY)).toEqual({ tela: 'inicio', aba: 'lobby' })
   })
 
   it('qualquer outro hash volta para o lobby', () => {
     for (const hash of ['#', '#/musicas/', '#/buscar/', '#/filas', '#/musica/', '#/musica/../x', '#/musica/ABCDEF123456']) {
-      expect(lerRota(hash)).toEqual({ tela: 'lobby' })
+      expect(lerRota(hash)).toEqual({ tela: 'inicio', aba: 'lobby' })
     }
   })
 
-  it('trocar de aba não troca de tela; trocar de música ou ir ao lobby troca', () => {
+  it('trocar de aba (o lobby incluído) não troca de tela; trocar de música troca', () => {
     expect(mesmaTela(lerRota('#/musicas'), lerRota('#/fila'))).toBe(true)
+    expect(mesmaTela(lerRota('#/'), lerRota('#/musicas'))).toBe(true)
     expect(mesmaTela(lerRota('#/musicas'), lerRota('#/musica/989ba3f6818c'))).toBe(false)
-    expect(mesmaTela(lerRota('#/'), lerRota('#/musicas'))).toBe(false)
-    expect(mesmaTela(lerRota('#/'), lerRota(''))).toBe(true)
+    expect(mesmaTela(lerRota('#/'), lerRota('#/musica/989ba3f6818c'))).toBe(false)
     expect(mesmaTela(lerRota('#/musica/989ba3f6818c'), lerRota('#/musica/abcdef123456'))).toBe(false)
     expect(mesmaTela(lerRota('#/musica/989ba3f6818c'), lerRota('#/musica/989ba3f6818c'))).toBe(true)
   })

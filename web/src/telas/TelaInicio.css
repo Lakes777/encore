@@ -7,6 +7,17 @@
   z-index: 10;
   margin: -24px -16px 0;
   padding: 20px 16px 0;
+}
+
+/* O fundo do cabeçalho vai de ponta a ponta da janela (no lobby, as pranchas passam
+   por baixo dele) */
+.inicio__cabeca::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 50%;
+  z-index: -1;
+  width: 100vw;
+  translate: -50% 0;
   border-bottom: 1px solid var(--border);
   background: rgb(13 14 16 / 0.85);
   backdrop-filter: blur(10px);
@@ -33,6 +44,8 @@
 .inicio__titulo {
   margin: 0;
   font-size: 1.5rem;
+  /* No lobby é um <p> (o h1 é o título grande): o mesmo peso de título */
+  font-weight: 700;
   line-height: 1.2;
 }
 
@@ -123,16 +136,18 @@
 /* ---------- cada aba ---------- */
 
 /* Entrada da aba: o cabeçalho, depois o conteúdo, depois os cartões um a um */
-.aba-tela--entrando .secao > * {
+/* Os diálogos (filhos da seção) e os erros que chegam depois ficam de fora: um diálogo
+   que abre não pode sumir e subir junto, e um erro aparece na hora */
+.aba-tela--entrando .secao > :not(.dialogo__fundo, .erro) {
   animation: surgir 0.5s var(--ease-texto) both;
   animation-delay: 0.05s;
 }
 
-.aba-tela--entrando .secao > :nth-child(2) {
+.aba-tela--entrando .secao > :nth-child(2):not(.dialogo__fundo, .erro) {
   animation-delay: 0.15s;
 }
 
-.aba-tela--entrando .secao > :nth-child(n + 3) {
+.aba-tela--entrando .secao > :nth-child(n + 3):not(.dialogo__fundo, .erro) {
   animation-delay: 0.25s;
 }
 
@@ -161,11 +176,6 @@
 .secao h2 {
   margin: 0 0 12px;
   font-size: 1.25rem;
-}
-
-/* O título recebe o foco ao trocar de aba (para o leitor de tela), sem moldura */
-.secao h2[tabindex='-1']:focus {
-  outline: none;
 }
 
 .secao__cabecalho {

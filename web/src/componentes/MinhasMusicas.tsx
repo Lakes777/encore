@@ -14,6 +14,7 @@ import { Previa } from './Previa.tsx'
 interface Props {
   /** null enquanto carrega. */
   musicas: Musica[] | null
+  /** Erro ao carregar a lista: o texto aparece no início, fora das abas; aqui só tira o "carregando". */
   erro: string
   aoMudar: () => void
   previaAberta: string | null
@@ -98,11 +99,6 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
       {erroImportar && (
         <p className="erro" role="alert">
           {erroImportar}
-        </p>
-      )}
-      {erro && (
-        <p className="erro" role="alert">
-          {erro}
         </p>
       )}
       {erroApagar && (

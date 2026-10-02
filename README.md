@@ -34,6 +34,17 @@ a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra
    e dos vocais de apoio, tela cheia, botão para tocar a original e imagem de fundo com desfoque ajustável.
 6. Treinar: **velocidade** de 50% a 150% sem mudar o tom e **metrônomo** alinhado às batidas da música.
 
+O site abre numa página de apresentação e o resto fica em abas, com o endereço no `#` (dá para
+voltar, avançar e guardar o link):
+
+| Endereço | Tela |
+|---|---|
+| `#/` | Início: a apresentação do projeto, com as pranchas passando no fundo |
+| `#/musicas` | Minhas músicas: as prontas, com capa, tom e prévia |
+| `#/buscar` | Buscar no YouTube e mandar para a fila |
+| `#/fila` | Fila: o progresso de cada música sendo preparada |
+| `#/musica/ID` | A música: letra, volumes, treino e ajustes |
+
 A letra do LRCLIB muitas vezes foi sincronizada com outra edição da música (no Help!, a voz vinha
 0,5 s depois de quase todos os versos). O site acha esse atraso sozinho, encaixando os versos nos
 trechos em que a voz principal soa, e dá para ajustar à mão de 0,1 em 0,1 s. O LRCLIB quase nunca
@@ -140,7 +151,8 @@ tests/
 web/                 # Site em React + TypeScript (Vite)
   src/logica/        # Cliente da API, tipos, letra e sincronia das faixas (funções puras)
   src/componentes/   # Busca, fila, lista, diálogos de letra e fundo, volumes, letra
-  src/telas/         # TelaInicio (busca, fila e músicas) e TelaMusica (o player)
+  src/telas/         # TelaInicio (abas: apresentação, músicas, busca e fila), TelaLobby e TelaMusica (o player)
+  public/pranchas/   # Desenhos do fundo da apresentação (SVG próprios)
   tests/
 ```
 
@@ -215,6 +227,7 @@ Fase 1: karaokê
 - [x] Avisar quando o resultado da busca é um videoclipe ou ao vivo e mostrar primeiro o áudio da música
 - [x] Exportar e importar uma música pronta (.zip), para separar no PC com placa de vídeo e levar para outro computador
 - [x] Interface nova: capas na lista e na fila, título limpo (sem "[Official Video]"), controles da música em abas (Volumes, Treino, Ajustes) e gaveta de baixo no celular
+- [x] Lobby de apresentação, início em abas e destaques na cor da capa
 - [ ] Levar velocidade e metrônomo para o modo instrumento quando ele existir
 - [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 
