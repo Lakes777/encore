@@ -6,7 +6,7 @@ import { MinhasMusicas } from '../componentes/MinhasMusicas.tsx'
 import { api } from '../logica/api.ts'
 import { emAndamento } from '../logica/fila.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
-import { LINK_DA_ABA, type AbaInicio } from '../logica/rota.ts'
+import { LINK_DA_ABA, LINK_LOBBY, type AbaInicio } from '../logica/rota.ts'
 import type { EstadoTarefa, Musica, Sistema, Tarefa } from '../logica/tipos.ts'
 import './TelaInicio.css'
 
@@ -23,7 +23,7 @@ const ABAS: { id: AbaInicio; rotulo: string }[] = [
 ]
 
 interface Props {
-  /** Aba aberta (vem do endereço: #/, #/buscar ou #/fila). */
+  /** Aba aberta (vem do endereço: #/musicas, #/buscar ou #/fila). */
   aba?: AbaInicio
 }
 
@@ -207,11 +207,16 @@ export function TelaInicio({ aba = 'musicas' }: Props) {
     <main className="pagina inicio">
       <div className="inicio__cabeca">
         <header className="inicio__topo">
-          <span className="inicio__logo" aria-hidden>
+          {/* O logo e o nome levam de volta ao lobby (o logo fica fora do Tab: o nome já é o link) */}
+          <a className="inicio__logo" href={LINK_LOBBY} tabIndex={-1} aria-hidden>
             <Mic size={22} aria-hidden />
-          </span>
+          </a>
           <div>
-            <h1 className="inicio__titulo">Karaokê</h1>
+            <h1 className="inicio__titulo">
+              <a className="inicio__marca" href={LINK_LOBBY} title="Voltar para a apresentação">
+                Karaokê
+              </a>
+            </h1>
             <p className="texto-fraco inicio__lema">Busque uma música, tire a voz e cante por cima.</p>
           </div>
         </header>

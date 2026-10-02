@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { mesmaTela, useRota } from './logica/rota.ts'
 import { TelaInicio } from './telas/TelaInicio.tsx'
+import { TelaLobby } from './telas/TelaLobby.tsx'
 import { TelaMusica } from './telas/TelaMusica.tsx'
 
 /** Quanto dura o fade de saída da tela antes da próxima entrar (o mesmo .tela--saindo do CSS). */
@@ -25,8 +26,10 @@ export default function App() {
   const tela = saindo ? exibida : rota
   return (
     // key: trocar de música recria a tela (players, letra e volumes começam do zero)
-    <div key={tela.tela === 'musica' ? tela.id : 'inicio'} className={saindo ? 'tela tela--saindo' : 'tela tela--entrando'}>
-      {tela.tela === 'musica' ? <TelaMusica id={tela.id} /> : <TelaInicio aba={tela.aba} />}
+    <div key={tela.tela === 'musica' ? tela.id : tela.tela} className={saindo ? 'tela tela--saindo' : 'tela tela--entrando'}>
+      {tela.tela === 'lobby' && <TelaLobby />}
+      {tela.tela === 'inicio' && <TelaInicio aba={tela.aba} />}
+      {tela.tela === 'musica' && <TelaMusica id={tela.id} />}
     </div>
   )
 }

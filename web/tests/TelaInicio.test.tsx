@@ -100,7 +100,7 @@ describe('abas', () => {
     expect(screen.queryByRole('heading', { name: 'Fila' })).not.toBeInTheDocument()
     const menu = screen.getByRole('navigation', { name: 'Seções' })
     expect(within(menu).getByRole('link', { name: 'Buscar' })).toHaveAttribute('aria-current', 'page')
-    expect(within(menu).getByRole('link', { name: 'Minhas músicas' })).toHaveAttribute('href', '#/')
+    expect(within(menu).getByRole('link', { name: 'Minhas músicas' })).toHaveAttribute('href', '#/musicas')
     expect(within(menu).getByRole('link', { name: 'Minhas músicas' })).not.toHaveAttribute('aria-current')
   })
 

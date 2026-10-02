@@ -97,7 +97,7 @@ describe('carregar', () => {
   it('mostra o cabeçalho, um <audio> por faixa e espera as faixas carregarem', async () => {
     await abrir()
     expect(screen.getByText('The Beatles · D maior')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voltar para o início' })).toHaveAttribute('href', '#/')
+    expect(screen.getByRole('link', { name: 'Voltar para o início' })).toHaveAttribute('href', '#/musicas')
     expect(todosOsAudios()).toHaveLength(4)
     expect(audio('voz-principal.wav')).toHaveAttribute('src', `/api/musicas/${ID}/faixas/voz-principal.wav`)
     expect(audio('voz-principal.wav')).toHaveAttribute('preload', 'auto')
@@ -119,7 +119,7 @@ describe('carregar', () => {
     render(<TelaMusica id={ID} />)
     expect(screen.getByText('Carregando a música…')).toBeInTheDocument()
     expect(await screen.findByRole('alert')).toHaveTextContent('Música não encontrada.')
-    expect(screen.getByRole('link', { name: 'Voltar para o início' })).toHaveAttribute('href', '#/')
+    expect(screen.getByRole('link', { name: 'Voltar para o início' })).toHaveAttribute('href', '#/musicas')
   })
 })
 
@@ -311,7 +311,7 @@ describe('letra', () => {
   it('sem letra mostra o aviso com o link para escolher', async () => {
     await abrir(umaMusica({ tem_letra: false }), new ErroApi(404, 'Essa música não tem letra.'))
     expect(screen.getByText('Essa música ainda não tem letra.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Escolher a letra na tela inicial' })).toHaveAttribute('href', '#/')
+    expect(screen.getByRole('link', { name: 'Escolher a letra na tela inicial' })).toHaveAttribute('href', '#/musicas')
   })
 
   it('destaca o verso do tempo atual', async () => {

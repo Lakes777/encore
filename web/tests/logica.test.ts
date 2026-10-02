@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, ErroApi, urlDaFaixa } from '../src/logica/api.ts'
 import { descricaoTom, formatarAtraso, formatarDuracao, formatarEstimativa, nomeDaMusica } from '../src/logica/formatar.ts'
 import { capaDaMusica, miniaturaDoVideo } from '../src/logica/youtube.ts'
-import { lerRota, linkDaMusica, mesmaTela } from '../src/logica/rota.ts'
+import { LINK_INICIO, LINK_LOBBY, lerRota, linkDaMusica, mesmaTela } from '../src/logica/rota.ts'
 import { contraste, corMarcante, paletaDaCor } from '../src/logica/cores.ts'
 import { ajustarVelocidade } from '../src/logica/velocidade.ts'
 import { batidasParaAgendar } from '../src/logica/metronomo.ts'
@@ -16,19 +16,29 @@ describe('rota', () => {
   })
 
   it('lê a aba do início', () => {
+    expect(lerRota('#/musicas')).toEqual({ tela: 'inicio', aba: 'musicas' })
     expect(lerRota('#/buscar')).toEqual({ tela: 'inicio', aba: 'buscar' })
     expect(lerRota('#/fila')).toEqual({ tela: 'inicio', aba: 'fila' })
+    expect(lerRota(LINK_INICIO)).toEqual({ tela: 'inicio', aba: 'musicas' })
   })
 
-  it('qualquer outro hash volta para o início, em Minhas músicas', () => {
-    for (const hash of ['', '#/', '#/buscar/', '#/filas', '#/musica/', '#/musica/../x', '#/musica/ABCDEF123456']) {
-      expect(lerRota(hash)).toEqual({ tela: 'inicio', aba: 'musicas' })
+  it('o hash vazio e #/ abrem o lobby', () => {
+    expect(lerRota('')).toEqual({ tela: 'lobby' })
+    expect(lerRota('#/')).toEqual({ tela: 'lobby' })
+    expect(lerRota(LINK_LOBBY)).toEqual({ tela: 'lobby' })
+  })
+
+  it('qualquer outro hash volta para o lobby', () => {
+    for (const hash of ['#', '#/musicas/', '#/buscar/', '#/filas', '#/musica/', '#/musica/../x', '#/musica/ABCDEF123456']) {
+      expect(lerRota(hash)).toEqual({ tela: 'lobby' })
     }
   })
 
-  it('trocar de aba não troca de tela; trocar de música troca', () => {
-    expect(mesmaTela(lerRota('#/'), lerRota('#/fila'))).toBe(true)
-    expect(mesmaTela(lerRota('#/'), lerRota('#/musica/989ba3f6818c'))).toBe(false)
+  it('trocar de aba não troca de tela; trocar de música ou ir ao lobby troca', () => {
+    expect(mesmaTela(lerRota('#/musicas'), lerRota('#/fila'))).toBe(true)
+    expect(mesmaTela(lerRota('#/musicas'), lerRota('#/musica/989ba3f6818c'))).toBe(false)
+    expect(mesmaTela(lerRota('#/'), lerRota('#/musicas'))).toBe(false)
+    expect(mesmaTela(lerRota('#/'), lerRota(''))).toBe(true)
     expect(mesmaTela(lerRota('#/musica/989ba3f6818c'), lerRota('#/musica/abcdef123456'))).toBe(false)
     expect(mesmaTela(lerRota('#/musica/989ba3f6818c'), lerRota('#/musica/989ba3f6818c'))).toBe(true)
   })
