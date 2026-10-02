@@ -202,6 +202,7 @@ Fase 1: karaokê
 - [x] Palavra que acende, estimada pelas sílabas dentro do tempo de voz de cada verso
 - [x] Avisar quando o resultado da busca é um videoclipe ou ao vivo e mostrar primeiro o áudio da música
 - [x] Exportar e importar uma música pronta (.zip), para separar no PC com placa de vídeo e levar para outro computador
+- [x] Interface nova: capas na lista e na fila, título limpo (sem "[Official Video]"), controles da música em abas (Volumes, Treino, Ajustes) e gaveta de baixo no celular; o GIF e os prints deste README ainda serão refeitos com ela
 - [ ] Levar velocidade e metrônomo para o modo instrumento quando ele existir
 - [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 
