@@ -70,8 +70,21 @@ export const api = {
   definirAtrasoLetra: (id: string, atraso: number | null) =>
     pedir<{ atraso: number | null }>(`${daMusica(id)}/atraso-letra`, { method: 'PUT', body: json({ atraso }) }),
 
+  /** Envia o .zip de uma música exportada; 409 = já existe (aí pede de novo com substituir). */
+  importarMusica: (arquivo: Blob, substituir = false) =>
+    pedir<Musica>(`/api/musicas/importar${substituir ? '?substituir=true' : ''}`, {
+      method: 'POST',
+      body: arquivo,
+      headers: { 'Content-Type': 'application/zip' },
+    }),
+
   capas: (id: string) => pedir<Capa[]>(`${daMusica(id)}/capas`),
   definirFundo: (id: string, fundo: Fundo) => pedir<Fundo>(`${daMusica(id)}/fundo`, { method: 'PUT', body: json(fundo) }),
+}
+
+/** Endereço que baixa a música inteira num .zip (para levar a outro computador). */
+export function urlDaExportacao(idMusica: string) {
+  return `${daMusica(idMusica)}/exportar`
 }
 
 /** Endereço do arquivo de uma faixa, para usar direto no <audio src>. */

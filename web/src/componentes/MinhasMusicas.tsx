@@ -1,6 +1,6 @@
-import { FileText, Image as IconeImagem, Play, Trash2 } from 'lucide-react'
-import { useState } from 'react'
-import { api, urlDaFaixa, urlDaPrevia } from '../logica/api.ts'
+import { Download, FileText, Image as IconeImagem, Play, Trash2, Upload } from 'lucide-react'
+import { useRef, useState, type ChangeEvent } from 'react'
+import { api, ErroApi, urlDaExportacao, urlDaFaixa, urlDaPrevia } from '../logica/api.ts'
 import { descricaoTom } from '../logica/formatar.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import { linkDaMusica } from '../logica/rota.ts'
@@ -24,6 +24,32 @@ type Janela = { tipo: 'letra' | 'fundo'; musica: Musica } | null
 export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevia }: Props) {
   const [janela, setJanela] = useState<Janela>(null)
   const [erroApagar, setErroApagar] = useState('')
+  const [importando, setImportando] = useState(false)
+  const [erroImportar, setErroImportar] = useState('')
+  const campoArquivo = useRef<HTMLInputElement>(null)
+
+  async function importar(evento: ChangeEvent<HTMLInputElement>) {
+    const arquivo = evento.target.files?.[0]
+    evento.target.value = '' // escolher o mesmo arquivo de novo também dispara
+    if (!arquivo) return
+    setImportando(true)
+    setErroImportar('')
+    try {
+      try {
+        await api.importarMusica(arquivo)
+      } catch (falha) {
+        // Já existe: a mensagem do servidor pergunta se substitui
+        if (!(falha instanceof ErroApi && falha.status === 409)) throw falha
+        if (!window.confirm(falha.message)) return
+        await api.importarMusica(arquivo, true)
+      }
+      aoMudar()
+    } catch (falha) {
+      setErroImportar(mensagemDoErro(falha))
+    } finally {
+      setImportando(false)
+    }
+  }
 
   async function apagar(musica: Musica) {
     if (!window.confirm(`Apagar "${musica.titulo}"? As faixas separadas também serão apagadas.`)) return
@@ -39,7 +65,33 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
 
   return (
     <section className="secao" aria-labelledby="titulo-musicas">
-      <h2 id="titulo-musicas">Minhas músicas</h2>
+      <div className="secao__cabecalho">
+        <h2 id="titulo-musicas">Minhas músicas</h2>
+        <button
+          type="button"
+          className="botao"
+          onClick={() => campoArquivo.current?.click()}
+          disabled={importando}
+          title="Trazer uma música exportada em outro computador (.zip)"
+        >
+          <Upload size={16} aria-hidden />
+          {importando ? 'Importando…' : 'Importar'}
+        </button>
+        <input
+          ref={campoArquivo}
+          type="file"
+          accept=".zip,application/zip"
+          className="invisivel"
+          tabIndex={-1}
+          aria-label="Arquivo .zip da música"
+          onChange={importar}
+        />
+      </div>
+      {erroImportar && (
+        <p className="erro" role="alert">
+          {erroImportar}
+        </p>
+      )}
       {erro && (
         <p className="erro" role="alert">
           {erro}
@@ -117,6 +169,15 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
                     >
                       <IconeImagem size={18} aria-hidden />
                     </button>
+                    <a
+                      className="botao botao--icone"
+                      href={urlDaExportacao(musica.id)}
+                      download
+                      aria-label={`Exportar ${musica.titulo}`}
+                      title="Exportar (.zip, para levar a outro computador)"
+                    >
+                      <Download size={18} aria-hidden />
+                    </a>
                     <button
                       type="button"
                       className="botao botao--icone botao--perigo"

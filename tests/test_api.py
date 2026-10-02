@@ -1,5 +1,7 @@
+import io
 import json
 import threading
+import zipfile
 
 import pytest
 from fastapi.testclient import TestClient
@@ -223,3 +225,80 @@ def test_sem_site_compilado_so_a_api_responde(pasta, tmp_path):
     app = TestClient(criar_app(pasta, Fila(pasta), dispositivo="cpu", pasta_site=tmp_path / "nao-existe"))
     assert app.get("/").status_code == 404
     assert app.get("/api/sistema").status_code == 200
+
+
+# ---------- exportar e importar ----------
+
+
+def test_exporta_a_musica_num_zip(pasta):
+    musica_salva(pasta, titulo="Like a Stone")
+    resposta = cliente(pasta).get(f"/api/musicas/{ID_MUSICA}/exportar")
+    assert resposta.status_code == 200
+    assert resposta.headers["content-type"] == "application/zip"
+    assert resposta.headers["content-disposition"] == 'attachment; filename="Like-a-Stone.karaoke.zip"'
+    with zipfile.ZipFile(io.BytesIO(resposta.content)) as pacote:
+        assert sorted(pacote.namelist()) == ["instrumental.wav", "musica.json"]
+
+
+def test_exportar_musica_que_nao_existe_da_404(pasta):
+    assert cliente(pasta).get("/api/musicas/000000000000/exportar").status_code == 404
+    assert cliente(pasta).get("/api/musicas/..%2F..%2Fetc/exportar").status_code == 404
+
+
+def test_importa_e_a_musica_aparece_na_lista(pasta, tmp_path):
+    dados = musica_salva(tmp_path / "outro-pc")
+    conteudo = cliente(tmp_path / "outro-pc").get(f"/api/musicas/{ID_MUSICA}/exportar").content
+    api = cliente(pasta)
+    resposta = api.post("/api/musicas/importar", content=conteudo, headers={"Content-Type": "application/zip"})
+    assert resposta.status_code == 201
+    assert resposta.json() == dados
+    assert [m["id"] for m in api.get("/api/musicas").json()] == [ID_MUSICA]
+    assert sorted(p.name for p in pasta.iterdir()) == [ID_MUSICA]  # o .zip recebido não fica para trás
+
+
+def test_importar_repetida_pergunta_e_substitui_se_pedir(pasta, tmp_path):
+    musica_salva(pasta, titulo="Antiga")
+    musica_salva(tmp_path / "outro-pc", titulo="Nova")
+    conteudo = cliente(tmp_path / "outro-pc").get(f"/api/musicas/{ID_MUSICA}/exportar").content
+    api = cliente(pasta)
+    resposta = api.post("/api/musicas/importar", content=conteudo)
+    assert resposta.status_code == 409
+    assert resposta.json()["detail"] == 'Já existe a música "Antiga". Substituir pela do pacote?'
+    assert api.post("/api/musicas/importar?substituir=true", content=conteudo).status_code == 201
+    assert api.get(f"/api/musicas/{ID_MUSICA}").json()["titulo"] == "Nova"
+
+
+def test_importar_o_que_nao_serve_da_422(pasta):
+    api = cliente(pasta)
+    resposta = api.post("/api/musicas/importar", content=b"isto nao e um zip")
+    assert resposta.status_code == 422
+    assert resposta.json()["detail"] == "O arquivo enviado não é um .zip válido."
+    assert api.post("/api/musicas/importar", content=b"").json()["detail"] == "Nenhum arquivo foi enviado."
+    assert list(pasta.iterdir()) == []
+
+
+def test_importar_grande_demais_da_413(pasta, monkeypatch):
+    monkeypatch.setattr("karaoke.pacote.TAMANHO_MAXIMO", 10)
+    resposta = cliente(pasta).post("/api/musicas/importar", content=b"x" * 11)
+    assert resposta.status_code == 413  # pelo Content-Length, antes de receber
+    assert not pasta.exists() or list(pasta.iterdir()) == []
+
+    def aos_pedacos():  # sem Content-Length: conta enquanto recebe
+        yield b"x" * 6
+        yield b"x" * 6
+
+    resposta = cliente(pasta).post("/api/musicas/importar", content=aos_pedacos())
+    assert resposta.status_code == 413
+    assert list(pasta.iterdir()) == []
+
+
+def test_importar_de_outro_site_e_recusado(pasta):
+    resposta = cliente(pasta).post("/api/musicas/importar", content=b"x", headers={"Origin": "https://malvado.example"})
+    assert resposta.status_code == 403
+
+
+def test_ao_subir_apaga_sobras_de_importacao(pasta):
+    musica_salva(pasta)
+    (pasta / ".importando-abc.zip").write_bytes(b"x")
+    cliente(pasta)
+    assert sorted(p.name for p in pasta.iterdir()) == [ID_MUSICA]

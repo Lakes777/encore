@@ -4,10 +4,12 @@ As rotas que chamam o YouTube são `def` (sem async): o FastAPI as roda numa
 thread à parte, então uma busca lenta não trava as outras rotas.
 """
 
+import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -20,7 +22,7 @@ from karaoke.letras import baixar_letra, buscar_versoes
 from karaoke.previa import Previas
 from karaoke.fila import Fila
 from karaoke.separacao import MODOS, detectar_dispositivo, estimar_segundos, modo_padrao
-from karaoke import versoes
+from karaoke import pacote, versoes
 
 
 class PedidoFila(BaseModel):
@@ -63,6 +65,7 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
     dispositivo = dispositivo or detectar_dispositivo()
     fila = fila or Fila(pasta_dados)
     biblioteca = Biblioteca(pasta_dados)
+    pacote.limpar_temporarios(pasta_dados)  # sobras de uma importação que o servidor não terminou
     previas = previas or Previas()
     app = FastAPI(title="Karaokê Web")
     app.state.fila = fila
@@ -235,6 +238,43 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
             raise HTTPException(404, "Faixa não encontrada.") from None
         # FileResponse aceita pedidos parciais (Range): o player pode pular para qualquer ponto
         return FileResponse(caminho, media_type="audio/wav")
+
+    @app.get("/api/musicas/{id_musica}/exportar")
+    def exportar(id_musica: str):
+        dados = _musica_ou_404(id_musica)
+        nome = pacote.nome_do_pacote(dados)
+        return StreamingResponse(
+            pacote.exportar(Path(pasta_dados) / id_musica, dados),
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{nome}"'},
+        )
+
+    @app.post("/api/musicas/importar", status_code=201)
+    async def importar(request: Request, substituir: bool = False):
+        # O .zip vem cru no corpo (sem formulário) e vai direto para o disco, ao lado das
+        # músicas: nada de guardar centenas de MB na memória
+        tamanho = request.headers.get("content-length")
+        if tamanho and tamanho.isdigit() and int(tamanho) > pacote.TAMANHO_MAXIMO:
+            raise HTTPException(413, "O pacote é grande demais.")
+        Path(pasta_dados).mkdir(parents=True, exist_ok=True)
+        recebido = Path(pasta_dados) / f"{pacote.PREFIXO_TEMPORARIO}{uuid.uuid4().hex}.zip"
+        try:
+            total = 0
+            with open(recebido, "wb") as arquivo:
+                async for pedaco in request.stream():
+                    total += len(pedaco)
+                    if total > pacote.TAMANHO_MAXIMO:
+                        raise HTTPException(413, "O pacote é grande demais.")
+                    arquivo.write(pedaco)
+            if total == 0:
+                raise HTTPException(422, "Nenhum arquivo foi enviado.")
+            return await run_in_threadpool(pacote.importar, biblioteca, recebido, substituir)
+        except pacote.JaExiste as erro:
+            raise HTTPException(409, f'Já existe a música "{erro.titulo}". Substituir pela do pacote?') from None
+        except ValueError as erro:
+            raise HTTPException(422, str(erro)) from None
+        finally:
+            recebido.unlink(missing_ok=True)
 
     @app.get("/api/{resto:path}", include_in_schema=False)
     def rota_inexistente(resto: str):

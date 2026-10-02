@@ -114,6 +114,7 @@ karaoke/
   previa.py      # Repassa o áudio do YouTube para a prévia da busca
   versoes.py     # Versões prontas: procura, compara pelo cromagrama e alinha
   internet.py    # Pedidos às APIs públicas
+  pacote.py      # Exportar e importar uma música pronta (.zip)
   api.py         # Rotas da API (FastAPI)
   __main__.py    # python -m karaoke
 tests/
@@ -123,6 +124,7 @@ tests/
   test_analise_fila.py
   test_api.py
   test_letras_capas.py
+  test_pacote.py
 web/                 # Site em React + TypeScript (Vite)
   src/logica/        # Cliente da API, tipos, letra e sincronia das faixas (funções puras)
   src/componentes/   # Busca, fila, lista, diálogos de letra e fundo, volumes, letra
@@ -173,6 +175,12 @@ web/                 # Site em React + TypeScript (Vite)
   o site é local. Então a prévia toca num `<audio>` do próprio site: nas músicas já baixadas, o
   áudio original; nos resultados da busca, o yt-dlp acha o endereço do áudio e o servidor repassa
   só os pedaços que o navegador pede (Range), sem baixar a música inteira.
+- **Música pronta num .zip.** Cada música já é uma pasta completa (faixas, `musica.json` e letra), então
+  dá para separar no PC com placa de vídeo, exportar e importar no notebook. O zip sai enquanto é
+  montado, com os WAV sem compressão (quase não encolhem: Bat Country, 173 MB, sai em 3 s). Na
+  importação, o servidor grava o envio direto no disco, confere o pacote (id, só nomes de arquivo
+  sem pasta, faixas do `musica.json` presentes, tamanho) e extrai numa pasta temporária que só no fim
+  vira a da música; se o id já existe, o site pergunta antes de substituir.
 
 ## Próximos passos
 
@@ -193,6 +201,7 @@ Fase 1: karaokê
 - [x] Sincronia da letra automática (pelos trechos de voz) e manual, salva por música
 - [x] Palavra que acende, estimada pelas sílabas dentro do tempo de voz de cada verso
 - [x] Avisar quando o resultado da busca é um videoclipe ou ao vivo e mostrar primeiro o áudio da música
+- [x] Exportar e importar uma música pronta (.zip), para separar no PC com placa de vídeo e levar para outro computador
 - [ ] Levar velocidade e metrônomo para o modo instrumento quando ele existir
 - [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 

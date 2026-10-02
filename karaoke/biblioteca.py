@@ -4,6 +4,7 @@ import json
 import re
 import shutil
 import threading
+import uuid
 from functools import wraps
 from pathlib import Path
 
@@ -17,6 +18,7 @@ DESFOQUE_PADRAO = 12  # pixels
 DESFOQUE_MAXIMO = 40
 ATRASO_MAXIMO = 10  # segundos que a letra pode ser deslocada, para frente ou para trás
 _ID = re.compile(r"^[0-9a-f]{12}$")  # mesmo formato dos ids que a fila cria
+PREFIXO_APAGANDO = ".apagando-"  # pasta antiga, tirada do lugar antes de ser apagada
 
 
 def _travado(metodo):
@@ -154,6 +156,30 @@ class Biblioteca:
         dados["fundo"] = {"url": url, "desfoque": desfoque}
         self._gravar(id_musica, dados)
         return dados["fundo"]
+
+    @_travado
+    def colocar_pasta(self, id_musica, pasta_nova, substituir=False):
+        """Faz `pasta_nova` (já completa) virar a pasta da música. Com a trava, nenhuma
+        gravação do musica.json acontece no meio da troca.
+
+        Se a música já existe e não é para substituir, levanta FileExistsError com o
+        título dela. A antiga só sai do lugar com um rename e é apagada depois: se algo
+        falhar no meio, ela não fica pela metade.
+        """
+        destino = self._pasta_da(id_musica)
+        antiga = None
+        if destino.exists():
+            if not substituir:
+                try:
+                    titulo = self.obter(id_musica).get("titulo", "")
+                except (KeyError, ValueError):
+                    titulo = ""
+                raise FileExistsError(titulo)
+            antiga = self.pasta / f"{PREFIXO_APAGANDO}{uuid.uuid4().hex}"
+            destino.rename(antiga)
+        Path(pasta_nova).rename(destino)
+        if antiga:
+            shutil.rmtree(antiga, ignore_errors=True)
 
     @_travado
     def apagar(self, id_musica):

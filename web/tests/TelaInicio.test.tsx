@@ -410,6 +410,53 @@ describe('minhas músicas', () => {
     expect(screen.getByLabelText('Prévia de Help!')).toHaveAttribute('src', expect.stringMatching(/\/faixas\/original\.wav$/))
   })
 
+  it('exporta pelo link do .zip', async () => {
+    chamadas.musicas.mockResolvedValue([musica()])
+    render(<TelaInicio />)
+    const link = await screen.findByRole('link', { name: 'Exportar Help!' })
+    expect(link).toHaveAttribute('href', '/api/musicas/abcdef123456/exportar')
+    expect(link).toHaveAttribute('download')
+  })
+
+  it('importa um .zip e recarrega a lista', async () => {
+    chamadas.importarMusica.mockResolvedValue(musica())
+    const usuario = userEvent.setup()
+    render(<TelaInicio />)
+    const arquivo = new File(['zip'], 'Help.karaoke.zip', { type: 'application/zip' })
+    await usuario.upload(screen.getByLabelText('Arquivo .zip da música'), arquivo)
+    expect(chamadas.importarMusica).toHaveBeenCalledWith(arquivo)
+    await waitFor(() => expect(chamadas.musicas).toHaveBeenCalledTimes(2))
+  })
+
+  it('música repetida: substitui só se confirmar', async () => {
+    const repetida = new ErroApi(409, 'Já existe a música "Help!". Substituir pela do pacote?')
+    chamadas.importarMusica.mockRejectedValueOnce(repetida).mockRejectedValueOnce(repetida).mockResolvedValue(musica())
+    const confirmar = vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true)
+    vi.stubGlobal('confirm', confirmar)
+    const usuario = userEvent.setup()
+    render(<TelaInicio />)
+    const campo = screen.getByLabelText('Arquivo .zip da música')
+    const arquivo = new File(['zip'], 'Help.karaoke.zip', { type: 'application/zip' })
+
+    await usuario.upload(campo, arquivo)
+    expect(confirmar).toHaveBeenCalledWith('Já existe a música "Help!". Substituir pela do pacote?')
+    expect(chamadas.importarMusica).toHaveBeenCalledTimes(1)
+
+    await usuario.upload(campo, arquivo)
+    await waitFor(() => expect(chamadas.importarMusica).toHaveBeenLastCalledWith(arquivo, true))
+    await waitFor(() => expect(chamadas.musicas).toHaveBeenCalledTimes(2))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('mostra o erro da importação', async () => {
+    chamadas.importarMusica.mockRejectedValue(new ErroApi(422, 'O arquivo enviado não é um .zip válido.'))
+    const usuario = userEvent.setup()
+    render(<TelaInicio />)
+    await usuario.upload(screen.getByLabelText('Arquivo .zip da música'), new File(['x'], 'x.zip'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('O arquivo enviado não é um .zip válido.')
+    expect(screen.getByRole('button', { name: 'Importar' })).toBeEnabled()
+  })
+
   it('apaga depois de confirmar', async () => {
     chamadas.musicas.mockResolvedValue([musica()])
     chamadas.apagarMusica.mockResolvedValue(undefined)
