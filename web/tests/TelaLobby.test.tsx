@@ -47,7 +47,7 @@ afterEach(() => {
 describe('lobby', () => {
   it('mostra o título, os destaques, o Começar e o link do código', () => {
     render(<TelaLobby prontas={null} />)
-    expect(screen.getByRole('heading', { level: 1, name: 'Karaokê' })).toBeVisible()
+    expect(screen.getByRole('heading', { level: 1, name: 'Encore' })).toBeVisible()
     expect(within(screen.getByRole('list')).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.getByRole('link', { name: /ver o código no github/i })).toHaveAttribute('href', LINK_GITHUB)
     // As pranchas do fundo são decoração: o leitor de tela não as lê
@@ -110,7 +110,7 @@ describe('lobby como aba do início', () => {
     expect(titulos).toHaveLength(1)
     expect(titulos[0]).toHaveClass('lobby__titulo')
     // O nome no cabeçalho continua lá (e leva ao lobby), só não é h1
-    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Karaokê' })).toHaveAttribute('href', '#/')
+    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Encore' })).toHaveAttribute('href', '#/')
     // A contagem vem da lista de músicas do próprio início
     expect(await screen.findByRole('link', { name: 'Começar' })).toHaveAttribute('href', '#/buscar')
   })
@@ -119,7 +119,7 @@ describe('lobby como aba do início', () => {
     chamadas.musicas.mockResolvedValue([musica('abcdef123456')])
     render(<TelaInicio aba="musicas" />)
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
-    expect(screen.getByRole('heading', { level: 1, name: 'Karaokê' })).toHaveClass('inicio__titulo')
+    expect(screen.getByRole('heading', { level: 1, name: 'Encore' })).toHaveClass('inicio__titulo')
     expect(screen.queryByRole('link', { name: 'Começar' })).not.toBeInTheDocument()
     await screen.findByRole('heading', { name: 'Like a Stone' })
   })

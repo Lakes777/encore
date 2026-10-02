@@ -1,4 +1,4 @@
-# Karaokê Web
+# Encore · karaokê com IA
 
 [![Testes](https://github.com/Lakes777/karaoke-web/actions/workflows/testes.yml/badge.svg)](https://github.com/Lakes777/karaoke-web/actions/workflows/testes.yml)
 

@@ -234,7 +234,7 @@ export function TelaInicio({ aba = 'musicas' }: Props) {
             {/* Um h1 só por tela: no lobby o h1 é o título grande dele */}
             <TituloDoTopo className="inicio__titulo">
               <a className="inicio__marca" href={LINK_LOBBY} title="Voltar para a apresentação">
-                Karaokê
+                Encore
               </a>
             </TituloDoTopo>
             <p className="texto-fraco inicio__lema">Busque uma música, tire a voz e cante por cima.</p>

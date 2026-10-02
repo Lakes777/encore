@@ -76,7 +76,7 @@ def criar_app(pasta_dados, fila=None, buscar=buscar, dispositivo=None, pedir=ped
     biblioteca = Biblioteca(pasta_dados)
     pacote.limpar_temporarios(pasta_dados)  # sobras de uma importação que o servidor não terminou
     previas = previas or Previas()
-    app = FastAPI(title="Karaokê Web")
+    app = FastAPI(title="Encore")
     app.state.fila = fila
 
     @app.middleware("http")

@@ -63,7 +63,8 @@ export function TelaLobby({ prontas }: Props) {
       </div>
 
       <div className="lobby__conteudo">
-        <h1 className="lobby__titulo">Karaokê</h1>
+        <h1 className="lobby__titulo">Encore</h1>
+        <p className="lobby__etiqueta">Karaokê com IA</p>
         <p className="lobby__frase">
           Busque uma música no YouTube, tire a voz com IA e cante por cima, com a letra acendendo no ritmo.
         </p>
