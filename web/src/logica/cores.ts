@@ -112,8 +112,18 @@ export function paletaDaCor(cor: Rgb): Paleta {
 // A mesma capa não é lida de novo ao voltar para a música
 const lidas = new Map<string, Paleta | null>()
 
-/** Lê a imagem num canvas pequeno. null se não carregar ou se o site dela não deixar ler (CORS). */
-function lerPaleta(url: string): Promise<Paleta | null> {
+/** O que saiu da leitura da capa; `guardar` diz se vale para sempre (vai para o cache). */
+export interface Leitura {
+  paleta: Paleta | null
+  guardar: boolean
+}
+
+/**
+ * Lê a imagem num canvas pequeno. paleta null se não carregar ou se o site dela não
+ * deixar ler (CORS). Uma falha ao carregar pode ser passageira (rede): essa não é
+ * guardada, e a capa é lida de novo da próxima vez.
+ */
+export function lerPaleta(url: string): Promise<Leitura> {
   return new Promise((resolver) => {
     const imagem = new Image()
     imagem.crossOrigin = 'anonymous'
@@ -125,15 +135,16 @@ function lerPaleta(url: string): Promise<Paleta | null> {
         canvas.width = lado
         canvas.height = lado
         const contexto = canvas.getContext('2d', { willReadFrequently: true })
-        if (!contexto) return resolver(null)
+        if (!contexto) return resolver({ paleta: null, guardar: false })
         contexto.drawImage(imagem, 0, 0, lado, lado)
         const cor = corMarcante(contexto.getImageData(0, 0, lado, lado).data)
-        resolver(cor && paletaDaCor(cor))
+        resolver({ paleta: cor && paletaDaCor(cor), guardar: true })
       } catch {
-        resolver(null) // imagem de um site sem CORS: o canvas fica "sujo" e não deixa ler
+        // imagem de um site sem CORS: o canvas fica "sujo" e não deixa ler (e nunca vai deixar)
+        resolver({ paleta: null, guardar: true })
       }
     }
-    imagem.onerror = () => resolver(null)
+    imagem.onerror = () => resolver({ paleta: null, guardar: false })
     imagem.src = url
   })
 }
@@ -144,8 +155,8 @@ export function useCoresDaCapa(url: string | null) {
   useEffect(() => {
     if (!url || lidas.has(url)) return
     let ativo = true
-    void lerPaleta(url).then((lida) => {
-      lidas.set(url, lida)
+    void lerPaleta(url).then(({ paleta: lida, guardar }) => {
+      if (guardar) lidas.set(url, lida)
       if (ativo) setPaleta({ url, paleta: lida })
     })
     return () => {
