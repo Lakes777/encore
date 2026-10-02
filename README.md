@@ -1,8 +1,8 @@
-# Encore · karaokê com IA
+# Encore
 
 [![Testes](https://github.com/Lakes777/karaoke-web/actions/workflows/testes.yml/badge.svg)](https://github.com/Lakes777/karaoke-web/actions/workflows/testes.yml)
 
-Karaokê que roda no próprio computador: você busca uma música do YouTube, o app separa
+**Encore · karaokê com IA.** Karaokê que roda no próprio computador: você busca uma música do YouTube, o app separa
 a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra a
 **letra sincronizada** enquanto a música toca, com um volume para cada faixa.
 
