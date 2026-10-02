@@ -12,3 +12,6 @@ modelos/
 
 # Worktrees e configurações locais do Claude Code
 .claude/
+
+# Configuração do rodar.sh neste computador
+rodar.local

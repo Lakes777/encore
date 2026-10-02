@@ -60,6 +60,10 @@ pip install -r requirements.txt
 python -m karaoke                     # abra http://127.0.0.1:8000 (as rotas em /docs)
 ```
 
+Depois da instalação, `./rodar.sh` faz tudo de uma vez: compila o site se ele mudou e sobe o
+servidor (Ctrl+C desliga). Pastas e Python diferentes do padrão vão num `rodar.local` (fora do git),
+com as mesmas variáveis abaixo e `KARAOKE_PYTHON`.
+
 Para mexer no site com recarga automática: deixe o `python -m karaoke` rodando e, em outro
 terminal, `cd web && npm run dev` (o Vite repassa `/api` para a porta 8000).
 
