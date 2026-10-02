@@ -11,6 +11,10 @@ a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra
 > **Atenção:** projeto de estudo, para uso pessoal e local. Baixar áudio do YouTube vai
 > contra os termos de uso da plataforma, por isso o app não é hospedado publicamente.
 
+<p align="center">
+  <img src="docs/demo.gif" alt="Demonstração: buscando Like a Stone do Audioslave, com prévia e opções de qualidade em cada resultado; abrindo Bat Country, clicando numa linha da letra para pular até ela, tocando com as palavras acendendo no ritmo, silenciando a voz principal e passando pelas abas Treino e Ajustes" width="800">
+</p>
+
 ![Tela inicial: busca e a lista de músicas prontas, cada uma com capa, título limpo, tom e botões de prévia, letra, fundo, exportar e apagar](docs/inicio.png)
 
 ![Tela da música: letra sincronizada no centro, painel com as abas Volumes, Treino e Ajustes, e o player embaixo](docs/musica.png)
@@ -210,7 +214,7 @@ Fase 1: karaokê
 - [x] Palavra que acende, estimada pelas sílabas dentro do tempo de voz de cada verso
 - [x] Avisar quando o resultado da busca é um videoclipe ou ao vivo e mostrar primeiro o áudio da música
 - [x] Exportar e importar uma música pronta (.zip), para separar no PC com placa de vídeo e levar para outro computador
-- [x] Interface nova: capas na lista e na fila, título limpo (sem "[Official Video]"), controles da música em abas (Volumes, Treino, Ajustes) e gaveta de baixo no celular; o GIF e os prints deste README ainda serão refeitos com ela
+- [x] Interface nova: capas na lista e na fila, título limpo (sem "[Official Video]"), controles da música em abas (Volumes, Treino, Ajustes) e gaveta de baixo no celular
 - [ ] Levar velocidade e metrônomo para o modo instrumento quando ele existir
 - [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 
