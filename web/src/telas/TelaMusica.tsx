@@ -185,11 +185,6 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
           <p className="texto-fraco tela-musica__salvamento" role="status">
             {salvamento.estado === 'salvando' ? 'Salvando os volumes…' : salvamento.estado === 'salvo' ? 'Volumes salvos' : ''}
           </p>
-          {salvamento.erro && (
-            <p className="erro" role="alert">
-              {salvamento.erro}
-            </p>
-          )}
         </>
       ),
     },
@@ -327,7 +322,9 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
           <span>{formatarDuracao(duracao)}</span>
         </div>
         <div className="tela-musica__botoes">
-          <p className="texto-fraco tela-musica__lembretes">{lembretes.join(' · ')}</p>
+          <p className="texto-fraco tela-musica__lembretes" title={lembretes.join(' · ') || undefined}>
+            {lembretes.join(' · ')}
+          </p>
           <div className="tela-musica__transporte">
             <button
               type="button"
@@ -376,6 +373,12 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
         <p className="texto-fraco tela-musica__aviso" role="status">
           {player.erro ?? (todasProntas ? '' : 'Carregando as faixas…')}
         </p>
+        {/* Fora do painel: o aviso aparece mesmo com a gaveta fechada ou em outra aba */}
+        {salvamento.erro && (
+          <p className="erro tela-musica__aviso" role="alert">
+            {salvamento.erro}
+          </p>
+        )}
       </section>
 
       {faixas.map((faixa, indice) => (

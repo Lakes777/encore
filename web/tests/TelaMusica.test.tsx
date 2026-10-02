@@ -519,6 +519,17 @@ describe('painel de controles', () => {
     expect(screen.getByRole('slider', { name: 'Volume de voz principal' })).toHaveValue('25')
   })
 
+  it('erro ao salvar os volumes aparece mesmo com o painel fechado', async () => {
+    vi.mocked(api.definirVolumes).mockRejectedValue(new ErroApi(0, 'O servidor do karaokê não respondeu.'))
+    await abrir()
+    fireEvent.change(screen.getByRole('slider', { name: 'Volume de instrumental' }), { target: { value: '50' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Fechar os controles' }))
+    expect(screen.queryByRole('tab', { name: 'Volumes' })).not.toBeInTheDocument()
+    const alerta = await screen.findByRole('alert', {}, { timeout: 2000 })
+    expect(alerta).toHaveTextContent('Não deu para salvar os volumes')
+    expect(alerta).toBeVisible()
+  })
+
   it('sem letra sincronizada nem imagem, não há a aba Ajustes', async () => {
     await abrir(umaMusica({ fundo: undefined }), LETRA.map((verso) => ({ ...verso, tempo: null })))
     expect(screen.getAllByRole('tab').map((aba) => aba.textContent)).toEqual(['Volumes', 'Treino'])
