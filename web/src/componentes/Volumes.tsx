@@ -15,7 +15,8 @@ export function Volumes({ faixas, estado, aoMudar }: Props) {
 
   return (
     <section className="volumes" aria-labelledby="titulo-volumes">
-      <h2 id="titulo-volumes" className="tela-musica__subtitulo">
+      {/* A aba já diz "Volumes": o título fica só para o leitor de tela */}
+      <h2 id="titulo-volumes" className="invisivel">
         Volumes
       </h2>
       <ul className="volumes__lista">

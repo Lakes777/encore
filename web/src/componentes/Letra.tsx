@@ -36,13 +36,18 @@ export function Letra({ versos, tempo, aoPular, trechos = SEM_TRECHOS }: Props) 
 
   // Rola a caixa (e não a página) para deixar o verso atual no meio.
   useEffect(() => {
-    const elemento = caixa.current
-    if (!sincronizada || !elemento || typeof elemento.scrollTo !== 'function') return
-    const verso = elemento.querySelector<HTMLElement>('[data-atual="true"]')
-    const alvo = verso ? verso.offsetTop - elemento.clientHeight / 2 + verso.offsetHeight / 2 : 0
-    const reduzido = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    elemento.scrollTo({ top: Math.max(0, alvo), behavior: reduzido ? 'auto' : 'smooth' })
+    if (sincronizada) centralizar(caixa.current, true)
   }, [atual, sincronizada])
+
+  // A caixa mudou de altura (gaveta de controles abriu ou fechou, janela mudou):
+  // centraliza de novo, sem esperar o próximo verso.
+  useEffect(() => {
+    const elemento = caixa.current
+    if (!sincronizada || !elemento || typeof ResizeObserver === 'undefined') return
+    const observador = new ResizeObserver(() => centralizar(elemento, false))
+    observador.observe(elemento)
+    return () => observador.disconnect()
+  }, [sincronizada])
 
   if (!sincronizada) {
     return (
@@ -96,4 +101,13 @@ export function Letra({ versos, tempo, aoPular, trechos = SEM_TRECHOS }: Props) 
       </ol>
     </div>
   )
+}
+
+/** Põe o verso atual no meio da caixa (com rolagem suave, se pedido e se a pessoa não preferir menos movimento). */
+function centralizar(elemento: HTMLDivElement | null, suave: boolean) {
+  if (!elemento || typeof elemento.scrollTo !== 'function') return
+  const verso = elemento.querySelector<HTMLElement>('[data-atual="true"]')
+  const alvo = verso ? verso.offsetTop - elemento.clientHeight / 2 + verso.offsetHeight / 2 : 0
+  const reduzido = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  elemento.scrollTo({ top: Math.max(0, alvo), behavior: suave && !reduzido ? 'smooth' : 'auto' })
 }

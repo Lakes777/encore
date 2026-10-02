@@ -1,5 +1,7 @@
-import { ArrowLeft, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw } from 'lucide-react'
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
+import { ArrowLeft, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, SlidersHorizontal, X } from 'lucide-react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent as EventoDeTecla } from 'react'
+import { Abas, type Aba } from '../componentes/Abas.tsx'
+import { Capa } from '../componentes/Capa.tsx'
 import { ControleDesfoque } from '../componentes/ControleDesfoque.tsx'
 import { Letra } from '../componentes/Letra.tsx'
 import { Metronomo } from '../componentes/Metronomo.tsx'
@@ -7,7 +9,7 @@ import { SincroniaLetra } from '../componentes/SincroniaLetra.tsx'
 import { Velocidade } from '../componentes/Velocidade.tsx'
 import { Volumes } from '../componentes/Volumes.tsx'
 import { api, ErroApi, urlDaFaixa } from '../logica/api.ts'
-import { descricaoTom, formatarDuracao } from '../logica/formatar.ts'
+import { descricaoTom, formatarDuracao, nomeDaMusica } from '../logica/formatar.ts'
 import { deslocarVersos, estimarAtraso, letraSincronizada } from '../logica/letra.ts'
 import { LINK_INICIO } from '../logica/rota.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
@@ -16,12 +18,15 @@ import { useMetronomo } from '../logica/useMetronomo.ts'
 import { usePlayer } from '../logica/usePlayer.ts'
 import { useSalvarVolumes } from '../logica/useSalvarVolumes.ts'
 import { estadoInicialDosVolumes, volumeEfetivo } from '../logica/volumes.ts'
+import { capaDaMusica } from '../logica/youtube.ts'
 import './TelaMusica.css'
 
 /** Quanto os botões de voltar/avançar pulam. */
 const PULO = 5
 /** Lista vazia fixa: uma nova a cada render reiniciaria o metrônomo. */
 const SEM_BATIDAS: number[] = []
+/** Daqui para cima o painel fica ao lado da letra e começa aberto; abaixo, vira gaveta fechada. */
+export const TELA_LARGA = '(min-width: 900px)'
 
 type Carregamento =
   | { estado: 'carregando' }
@@ -114,6 +119,9 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
   const conteiner = useRef<HTMLDivElement>(null)
   const [telaCheia, setTelaCheia] = useState(false)
   const podeTelaCheia = typeof document.documentElement.requestFullscreen === 'function' && document.fullscreenEnabled !== false
+  // Sem matchMedia (como no jsdom), trata como tela larga: painel aberto.
+  const [painelAberto, setPainelAberto] = useState(() => window.matchMedia?.(TELA_LARGA).matches ?? true)
+  const botaoControles = useRef<HTMLButtonElement>(null)
 
   // Os volumes vão direto para os <audio>.
   useEffect(() => {
@@ -147,8 +155,82 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
     else void conteiner.current?.requestFullscreen()
   }
 
+  function fecharPainel() {
+    setPainelAberto(false)
+    botaoControles.current?.focus()
+  }
+
+  // Esc dentro do painel fecha (e o foco volta para o botão que abre).
+  function teclaNoPainel(evento: EventoDeTecla) {
+    if (evento.key !== 'Escape') return
+    evento.stopPropagation()
+    fecharPainel()
+  }
+
   const urlFundo = musica.fundo?.url
   const { tempo, duracao, tocando, todasProntas } = player
+  const nome = nomeDaMusica(musica)
+
+  const abas: Aba[] = [
+    {
+      id: 'volumes',
+      rotulo: 'Volumes',
+      conteudo: (
+        <>
+          <Volumes faixas={faixas} estado={volumes} aoMudar={setVolumes} />
+          <p className="texto-fraco tela-musica__salvamento" role="status">
+            {salvamento.estado === 'salvando' ? 'Salvando os volumes…' : salvamento.estado === 'salvo' ? 'Volumes salvos' : ''}
+          </p>
+          {salvamento.erro && (
+            <p className="erro" role="alert">
+              {salvamento.erro}
+            </p>
+          )}
+        </>
+      ),
+    },
+    {
+      id: 'treino',
+      rotulo: 'Treino',
+      conteudo: (
+        <>
+          <Velocidade velocidade={velocidade} aoMudar={setVelocidade} />
+          {batidas.length > 0 && (
+            <Metronomo
+              bpm={musica.bpm ?? null}
+              velocidade={velocidade}
+              ligado={metronomoLigado}
+              volume={volumeMetronomo}
+              aoLigar={setMetronomoLigado}
+              aoMudarVolume={setVolumeMetronomo}
+            />
+          )}
+        </>
+      ),
+    },
+  ]
+  // Ajustes só aparece quando há algo para ajustar
+  if (sincronizada || urlFundo) {
+    abas.push({
+      id: 'ajustes',
+      rotulo: 'Ajustes',
+      conteudo: (
+        <>
+          {sincronizada && (
+            <SincroniaLetra idMusica={musica.id} atrasoSalvo={atrasoSalvo} estimado={estimado} aoMudar={setAtrasoSalvo} />
+          )}
+          {urlFundo && <ControleDesfoque idMusica={musica.id} url={urlFundo} desfoque={desfoque} aoMudar={setDesfoque} />}
+        </>
+      ),
+    })
+  }
+
+  // O que está diferente do normal, para ver mesmo com o painel fechado
+  const lembretes = [
+    velocidade !== 1 && `velocidade ${Math.round(velocidade * 100)}%`,
+    metronomoLigado && 'metrônomo ligado',
+    volumes.tocandoOriginal && 'original',
+  ].filter(Boolean)
 
   return (
     <div className="tela-musica" ref={conteiner}>
@@ -167,8 +249,9 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
         <a href={LINK_INICIO} className="botao botao--icone" aria-label="Voltar para o início" title="Voltar">
           <ArrowLeft size={18} aria-hidden />
         </a>
+        <Capa url={capaDaMusica(musica)} className="tela-musica__capa" />
         <div className="tela-musica__nome">
-          <h1>{musica.titulo}</h1>
+          <h1 title={nome === musica.titulo ? undefined : musica.titulo}>{nome}</h1>
           <p className="texto-fraco">
             {musica.artista} · {descricaoTom(musica)}
           </p>
@@ -198,33 +281,28 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
           )}
         </section>
 
-        <aside className="tela-musica__painel">
-          <Volumes faixas={faixas} estado={volumes} aoMudar={setVolumes} />
-          <p className="texto-fraco" role="status">
-            {salvamento.estado === 'salvando' ? 'Salvando os volumes…' : salvamento.estado === 'salvo' ? 'Volumes salvos' : ''}
-          </p>
-          {salvamento.erro && (
-            <p className="erro" role="alert">
-              {salvamento.erro}
-            </p>
-          )}
-          <Velocidade velocidade={velocidade} aoMudar={setVelocidade} />
-          {batidas.length > 0 && (
-            <Metronomo
-              bpm={musica.bpm ?? null}
-              velocidade={velocidade}
-              ligado={metronomoLigado}
-              volume={volumeMetronomo}
-              aoLigar={setMetronomoLigado}
-              aoMudarVolume={setVolumeMetronomo}
-            />
-          )}
-          {sincronizada && (
-            <SincroniaLetra idMusica={musica.id} atrasoSalvo={atrasoSalvo} estimado={estimado} aoMudar={setAtrasoSalvo} />
-          )}
-          {urlFundo && (
-            <ControleDesfoque idMusica={musica.id} url={urlFundo} desfoque={desfoque} aoMudar={setDesfoque} />
-          )}
+        <aside
+          id="painel-controles"
+          className="tela-musica__painel"
+          aria-label="Controles"
+          hidden={!painelAberto}
+          onKeyDown={teclaNoPainel}
+        >
+          <Abas
+            rotulo="Grupos de controles"
+            abas={abas}
+            extra={
+              <button
+                type="button"
+                className="botao botao--icone tela-musica__fechar"
+                aria-label="Fechar os controles"
+                title="Fechar (Esc)"
+                onClick={fecharPainel}
+              >
+                <X size={18} aria-hidden />
+              </button>
+            }
+          />
         </aside>
       </div>
 
@@ -245,35 +323,50 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
           <span>{formatarDuracao(duracao)}</span>
         </div>
         <div className="tela-musica__botoes">
+          <p className="texto-fraco tela-musica__lembretes">{lembretes.join(' · ')}</p>
+          <div className="tela-musica__transporte">
+            <button
+              type="button"
+              className="botao botao--icone"
+              aria-label={`Voltar ${PULO} segundos`}
+              title={`Voltar ${PULO} s`}
+              disabled={!todasProntas}
+              onClick={() => player.pular(tempo - PULO)}
+            >
+              <RotateCcw size={18} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="botao botao--principal tela-musica__play"
+              aria-label={tocando ? 'Pausar' : 'Tocar'}
+              title={tocando ? 'Pausar (espaço)' : 'Tocar (espaço)'}
+              disabled={!todasProntas}
+              onClick={player.alternar}
+            >
+              {tocando ? <Pause size={22} aria-hidden /> : <Play size={22} aria-hidden />}
+            </button>
+            <button
+              type="button"
+              className="botao botao--icone"
+              aria-label={`Avançar ${PULO} segundos`}
+              title={`Avançar ${PULO} s`}
+              disabled={!todasProntas}
+              onClick={() => player.pular(tempo + PULO)}
+            >
+              <RotateCw size={18} aria-hidden />
+            </button>
+          </div>
           <button
+            ref={botaoControles}
             type="button"
-            className="botao botao--icone"
-            aria-label={`Voltar ${PULO} segundos`}
-            title={`Voltar ${PULO} s`}
-            disabled={!todasProntas}
-            onClick={() => player.pular(tempo - PULO)}
+            className="botao tela-musica__alternar"
+            aria-expanded={painelAberto}
+            aria-controls="painel-controles"
+            title={painelAberto ? 'Esconder os controles' : 'Mostrar volumes, treino e ajustes'}
+            onClick={() => setPainelAberto(!painelAberto)}
           >
-            <RotateCcw size={18} aria-hidden />
-          </button>
-          <button
-            type="button"
-            className="botao botao--principal tela-musica__play"
-            aria-label={tocando ? 'Pausar' : 'Tocar'}
-            title={tocando ? 'Pausar (espaço)' : 'Tocar (espaço)'}
-            disabled={!todasProntas}
-            onClick={player.alternar}
-          >
-            {tocando ? <Pause size={22} aria-hidden /> : <Play size={22} aria-hidden />}
-          </button>
-          <button
-            type="button"
-            className="botao botao--icone"
-            aria-label={`Avançar ${PULO} segundos`}
-            title={`Avançar ${PULO} s`}
-            disabled={!todasProntas}
-            onClick={() => player.pular(tempo + PULO)}
-          >
-            <RotateCw size={18} aria-hidden />
+            <SlidersHorizontal size={18} aria-hidden />
+            <span className="tela-musica__alternar-texto">Controles</span>
           </button>
         </div>
         <p className="texto-fraco tela-musica__aviso" role="status">

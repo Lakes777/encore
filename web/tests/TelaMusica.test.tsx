@@ -73,6 +73,11 @@ async function abrir(musica = umaMusica(), letra: Verso[] | Error = LETRA) {
   await screen.findByRole('heading', { name: musica.titulo })
 }
 
+/** Os controles ficam em abas (Volumes, Treino, Ajustes): abre a do nome dado. */
+function abrirAba(nome: string) {
+  fireEvent.click(screen.getByRole('tab', { name: nome }))
+}
+
 beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
@@ -239,6 +244,8 @@ describe('volumes', () => {
 describe('metrônomo', () => {
   it('sem batidas não aparece', async () => {
     await abrir()
+    abrirAba('Treino')
+    expect(screen.getByRole('heading', { name: 'Velocidade' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Metrônomo' })).not.toBeInTheDocument()
   })
 
@@ -262,6 +269,7 @@ describe('metrônomo', () => {
     vi.stubGlobal('AudioContext', AudioContextFalso)
 
     await abrir(umaMusica({ bpm: 120, batidas: [2, 2.5, 3, 3.5] }))
+    abrirAba('Treino')
     liberarFaixas()
     expect(screen.getByText('120 BPM')).toBeInTheDocument()
     fireEvent.change(screen.getByRole('slider', { name: 'Velocidade da música' }), { target: { value: '50' } })
@@ -280,6 +288,7 @@ describe('metrônomo', () => {
 describe('velocidade', () => {
   it('muda a velocidade de todas as faixas sem mudar o tom e volta ao normal', async () => {
     await abrir()
+    abrirAba('Treino')
     const normal = screen.getByRole('button', { name: 'Normal' })
     expect(normal).toBeDisabled()
     for (const elemento of todosOsAudios()) expect(elemento.playbackRate).toBe(1)
@@ -345,6 +354,7 @@ describe('letra', () => {
     const letra = tempos.map((tempo, i) => ({ tempo, texto: `verso ${i + 1}` }))
     // A voz entra meio segundo depois de cada verso da letra
     await abrir(umaMusica({ trechos_voz: tempos.map((t) => [t + 0.5, t + 3] as [number, number]) }), letra)
+    abrirAba('Ajustes')
     liberarFaixas()
     const valor = () => document.querySelector('.sincronia__valor')
 
@@ -372,6 +382,7 @@ describe('letra', () => {
   it('usa o atraso salvo e desfaz o clique se não conseguir salvar', async () => {
     vi.mocked(api.definirAtrasoLetra).mockRejectedValue(new ErroApi(0, 'O servidor do karaokê não respondeu.'))
     await abrir(umaMusica({ atraso_letra: -1 }))
+    abrirAba('Ajustes')
     const valor = () => document.querySelector('.sincronia__valor')
     expect(valor()).toHaveTextContent('−1 s')
     await userEvent.click(screen.getByRole('button', { name: 'Adiantar a letra 0,1 segundo' }))
@@ -386,6 +397,7 @@ describe('letra', () => {
       .mockImplementationOnce(() => new Promise((_, falhar) => (falharPrimeiro = falhar)))
       .mockResolvedValue({ atraso: 0.2 })
     await abrir(umaMusica({ atraso_letra: 0 }))
+    abrirAba('Ajustes')
     const valor = () => document.querySelector('.sincronia__valor')
     const atrasar = screen.getByRole('button', { name: 'Atrasar a letra 0,1 segundo' })
     await userEvent.click(atrasar)
@@ -400,6 +412,7 @@ describe('letra', () => {
 
   it('não passa do limite de 10 s do servidor', async () => {
     await abrir(umaMusica({ atraso_letra: 9.95 }))
+    abrirAba('Ajustes')
     expect(screen.getByRole('button', { name: 'Atrasar a letra 0,1 segundo' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Adiantar a letra 0,1 segundo' })).toBeEnabled()
   })
@@ -419,6 +432,7 @@ describe('fundo', () => {
     expect(fundo.style.backgroundImage).toContain('https://exemplo.com/capa.jpg')
     expect(fundo.style.filter).toBe('blur(12px)')
 
+    abrirAba('Ajustes')
     const controle = screen.getByRole('slider', { name: 'Desfoque do fundo' })
     fireEvent.change(controle, { target: { value: '20' } })
     fireEvent.change(controle, { target: { value: '30' } })
@@ -435,6 +449,7 @@ describe('fundo', () => {
   it('sem imagem não há fundo nem controle de desfoque', async () => {
     await abrir(umaMusica({ fundo: undefined }))
     expect(screen.queryByTestId('fundo')).not.toBeInTheDocument()
+    abrirAba('Ajustes') // continua por causa da sincronia da letra
     expect(screen.queryByRole('slider', { name: 'Desfoque do fundo' })).not.toBeInTheDocument()
   })
 })
@@ -442,4 +457,70 @@ describe('fundo', () => {
 it('sem suporte a tela cheia (como no jsdom) o botão não aparece', async () => {
   await abrir()
   expect(screen.queryByRole('button', { name: 'Tela cheia' })).not.toBeInTheDocument()
+})
+
+describe('painel de controles', () => {
+  /** Finge a largura da tela: true = computador, false = celular. */
+  function telaLarga(larga: boolean) {
+    vi.stubGlobal('matchMedia', (consulta: string) => ({ matches: larga && consulta.includes('min-width'), media: consulta }))
+  }
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('no computador começa aberto em Volumes; as outras abas ficam escondidas', async () => {
+    telaLarga(true)
+    await abrir()
+    expect(screen.getByRole('button', { name: 'Controles' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('tab', { name: 'Volumes' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('slider', { name: 'Volume de voz principal' })).toBeVisible()
+    expect(screen.queryByRole('slider', { name: 'Velocidade da música' })).not.toBeInTheDocument()
+    abrirAba('Treino')
+    expect(screen.getByRole('slider', { name: 'Velocidade da música' })).toBeVisible()
+    expect(screen.queryByRole('slider', { name: 'Volume de voz principal' })).not.toBeInTheDocument()
+  })
+
+  it('no celular começa fechado e abre pelo botão; Esc fecha e devolve o foco', async () => {
+    telaLarga(false)
+    await abrir()
+    const botao = screen.getByRole('button', { name: 'Controles' })
+    expect(botao).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('tab', { name: 'Volumes' })).not.toBeInTheDocument()
+    // O player continua à mão com o painel fechado
+    expect(screen.getByRole('button', { name: 'Tocar' })).toBeInTheDocument()
+    expect(screen.getByRole('slider', { name: 'Posição na música' })).toBeInTheDocument()
+
+    await userEvent.click(botao)
+    expect(botao).toHaveAttribute('aria-expanded', 'true')
+    const volume = screen.getByRole('slider', { name: 'Volume de instrumental' })
+    volume.focus()
+    await userEvent.keyboard('{Escape}')
+    expect(botao).toHaveAttribute('aria-expanded', 'false')
+    expect(botao).toHaveFocus()
+
+    await userEvent.click(botao)
+    await userEvent.click(screen.getByRole('button', { name: 'Fechar os controles' }))
+    expect(screen.queryByRole('tab', { name: 'Volumes' })).not.toBeInTheDocument()
+  })
+
+  it('setas trocam de aba e mexer em outra aba não perde o que foi feito', async () => {
+    await abrir()
+    fireEvent.change(screen.getByRole('slider', { name: 'Volume de voz principal' }), { target: { value: '25' } })
+    screen.getByRole('tab', { name: 'Volumes' }).focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(screen.getByRole('tab', { name: 'Treino' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Treino' })).toHaveFocus()
+    fireEvent.change(screen.getByRole('slider', { name: 'Velocidade da música' }), { target: { value: '75' } })
+    // Com o painel fechado ou em outra aba, o que mudou aparece ao lado do player
+    expect(screen.getByText('velocidade 75%')).toBeInTheDocument()
+    await userEvent.keyboard('{End}')
+    expect(screen.getByRole('tab', { name: 'Ajustes' })).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(screen.getByRole('tab', { name: 'Volumes' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('slider', { name: 'Volume de voz principal' })).toHaveValue('25')
+  })
+
+  it('sem letra sincronizada nem imagem, não há a aba Ajustes', async () => {
+    await abrir(umaMusica({ fundo: undefined }), LETRA.map((verso) => ({ ...verso, tempo: null })))
+    expect(screen.getAllByRole('tab').map((aba) => aba.textContent)).toEqual(['Volumes', 'Treino'])
+  })
 })
