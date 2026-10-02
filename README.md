@@ -50,7 +50,8 @@ duração. Os pedaços vão para uma pasta temporária dentro da pasta da músic
 
 ## Como rodar
 
-Precisa do Python 3.10+, do [ffmpeg](https://ffmpeg.org) e do Node 22.12+ (só para compilar o site).
+Precisa do Python 3.10+, do [ffmpeg](https://ffmpeg.org) e do Node 22.12+ (compila o site e, no download,
+resolve o JavaScript que o YouTube pede; sem node ou deno o YouTube pode recusar com erro 403).
 
 ```bash
 python3 -m venv .venv
@@ -61,7 +62,8 @@ python -m karaoke                     # abra http://127.0.0.1:8000 (as rotas em 
 ```
 
 Depois da instalação, `./rodar.sh` faz tudo de uma vez: compila o site se ele mudou e sobe o
-servidor (Ctrl+C desliga). Pastas e Python diferentes do padrão vão num `rodar.local` (fora do git),
+servidor (Ctrl+C desliga); o que aparece no terminal fica também em `rodar.log`, que recomeça
+a cada vez que o servidor sobe. Pastas e Python diferentes do padrão vão num `rodar.local` (fora do git),
 com as mesmas variáveis abaixo e `KARAOKE_PYTHON`.
 
 Para mexer no site com recarga automática: deixe o `python -m karaoke` rodando e, em outro

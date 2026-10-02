@@ -37,5 +37,9 @@ fi
 
 # O Python do ambiente na frente do PATH: o yt-dlp e o audio-separator ficam lá
 PATH="$(dirname "$PYTHON"):$PATH"
-echo "Karaokê em http://localhost:$PORTA (Ctrl+C para desligar)"
-exec "$PYTHON" -m karaoke
+command -v node >/dev/null || command -v deno >/dev/null ||
+  echo "Aviso: sem node nem deno no PATH, o YouTube pode recusar downloads (erro 403)."
+echo "Karaokê em http://localhost:$PORTA (Ctrl+C para desligar; o que aparecer aqui fica também em rodar.log)"
+# Mostra na tela e guarda no rodar.log (recomeça a cada vez), para ver um erro depois de fechar o
+# terminal. O -i faz o tee ignorar o Ctrl+C e gravar até a última mensagem do servidor.
+PYTHONUNBUFFERED=1 "$PYTHON" -m karaoke 2>&1 | tee -i rodar.log

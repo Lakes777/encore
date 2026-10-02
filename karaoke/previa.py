@@ -14,6 +14,8 @@ import threading
 import time
 from urllib.request import Request, urlopen
 
+from karaoke.download import OPCOES_YOUTUBE
+
 _ID_VIDEO = re.compile(r"^[A-Za-z0-9_-]{11}$")
 
 # O endereço do YouTube vale algumas horas; guardado por menos que isso, ele
@@ -30,7 +32,8 @@ def _extrair_com_yt_dlp(id_video):
     from yt_dlp import YoutubeDL
 
     # m4a (AAC) toca em todos os navegadores; o opus/webm não toca em todos
-    opcoes = {"quiet": True, "no_warnings": True, "noplaylist": True, "format": "bestaudio[ext=m4a]/bestaudio"}
+    opcoes = {**OPCOES_YOUTUBE, "quiet": True, "no_warnings": True, "noplaylist": True,
+              "format": "bestaudio[ext=m4a]/bestaudio"}
     info = YoutubeDL(opcoes).extract_info(f"https://www.youtube.com/watch?v={id_video}", download=False)
     return info["url"], info.get("http_headers") or {}
 

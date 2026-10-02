@@ -1,5 +1,5 @@
 # O app completo. O PyTorch e a separação com IA vêm com o audio-separator.
-yt-dlp
+yt-dlp[default]  # o [default] traz o yt-dlp-ejs, que resolve o JavaScript do YouTube (precisa de node ou deno)
 audio-separator>=0.47  # a separação em pedaços (chunk_duration) foi testada nesta versão
 librosa
 fastapi

@@ -45,6 +45,48 @@ def test_download_recusa_id_invalido(tmp_path, id_video):
         baixar_audio(id_video, tmp_path, baixar=baixar_falso)
 
 
+def recusar_vezes(vezes):
+    """yt-dlp falso que leva 403 nas primeiras `vezes` e depois baixa."""
+    chamadas = []
+
+    def baixar(url, modelo_nome, ao_progredir):
+        chamadas.append(url)
+        if len(chamadas) <= vezes:
+            raise Exception("ERROR: unable to download video data: HTTP Error 403: Forbidden")
+        baixar_falso(url, modelo_nome, ao_progredir)
+
+    baixar.chamadas = chamadas
+    return baixar
+
+
+def test_download_tenta_de_novo_quando_o_youtube_recusa(tmp_path):
+    baixar, esperas = recusar_vezes(1), []
+    caminho = baixar_audio("dQw4w9WgXcQ", tmp_path, baixar=baixar, esperar=esperas.append)
+    assert caminho.exists()
+    assert len(baixar.chamadas) == 2
+    assert esperas == [3]
+
+
+def test_download_explica_quando_o_youtube_recusa_sempre(tmp_path):
+    baixar = recusar_vezes(99)
+    with pytest.raises(RuntimeError, match="403.*yt-dlp"):
+        baixar_audio("dQw4w9WgXcQ", tmp_path, baixar=baixar, esperar=lambda s: None)
+    assert len(baixar.chamadas) == 2
+
+
+@pytest.mark.parametrize("id_video", ["dQw4w9WgXcQ", "ab403cdEFgh"])  # "403" no id não é recusa
+def test_download_nao_repete_outros_erros(tmp_path, id_video):
+    chamadas = []
+
+    def baixar(url, modelo_nome, ao_progredir):
+        chamadas.append(url)
+        raise Exception(f"ERROR: [youtube] {id_video}: Video unavailable")
+
+    with pytest.raises(Exception, match="unavailable"):
+        baixar_audio(id_video, tmp_path, baixar=baixar, esperar=lambda s: None)
+    assert len(chamadas) == 1
+
+
 def test_download_avisa_quando_o_audio_nao_aparece(tmp_path):
     with pytest.raises(RuntimeError, match="ffmpeg"):
         baixar_audio("dQw4w9WgXcQ", tmp_path, baixar=lambda url, modelo, progresso: None)
