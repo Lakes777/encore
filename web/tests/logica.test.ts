@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, ErroApi, urlDaFaixa } from '../src/logica/api.ts'
-import { descricaoTom, formatarDuracao, formatarEstimativa } from '../src/logica/formatar.ts'
+import { descricaoTom, formatarAtraso, formatarDuracao, formatarEstimativa } from '../src/logica/formatar.ts'
 import { lerRota, linkDaMusica } from '../src/logica/rota.ts'
 import { ajustarVelocidade } from '../src/logica/velocidade.ts'
 import { batidasParaAgendar } from '../src/logica/metronomo.ts'
 import { preenchimento, silabas, tempoDasPalavras } from '../src/logica/palavras.ts'
-import { deslocarVersos, estimarAtraso, type TrechoDeVoz } from '../src/logica/letra.ts'
+import { deslocarVersos, estimarAtraso, indiceDoVersoAtual, type TrechoDeVoz } from '../src/logica/letra.ts'
 
 describe('rota', () => {
   it('lê a tela da música pelo hash', () => {
@@ -90,6 +90,13 @@ describe('atraso da letra', () => {
     expect(deslocarVersos(versos([1]), 0)).toEqual(versos([1]))
   })
 
+  it('atraso negativo grande junta os primeiros versos no zero sem quebrar o verso atual', () => {
+    const deslocados = deslocarVersos(versos([1, 2, 6]), -3)
+    expect(deslocados.map((v) => v.tempo)).toEqual([0, 0, 3])
+    expect(indiceDoVersoAtual(deslocados, 0.5)).toBe(1) // dois no mesmo tempo: fica o último
+    expect(indiceDoVersoAtual(deslocados, 3)).toBe(2)
+  })
+
   it('acha o atraso mesmo com versos de fundo que não batem com a voz', () => {
     const tempos = [10, 14.4, 20.3, 26, 31.5, 37, 42.2, 48]
     const trechos: TrechoDeVoz[] = tempos.map((t) => [t + 0.52, t + 3])
@@ -127,7 +134,14 @@ describe('metrônomo', () => {
   })
 
   it('no fim da música não agenda nada', () => {
-    expect(batidasParaAgendar(batidas, 3.5, 0.15, -1)).toEqual({ agendar: [], proxima: 5 })
+    expect(batidasParaAgendar(batidas, 3.5, 0.15, -1)).toEqual({ agendar: [], proxima: 5, pulou: false })
+    expect(batidasParaAgendar([], 1, 0.15, -1)).toEqual({ agendar: [], proxima: 0, pulou: false })
+  })
+
+  it('avisa do pulo só quando já tinha agendado alguma coisa', () => {
+    expect(batidasParaAgendar(batidas, 0.4, 0.15, 4).pulou).toBe(true)
+    expect(batidasParaAgendar(batidas, 1.0, 0.15, -1).pulou).toBe(false) // começo: nada agendado ainda
+    expect(batidasParaAgendar(batidas, 1.6, 0.15, 2).pulou).toBe(false) // seguindo normalmente
   })
 })
 
@@ -160,5 +174,11 @@ describe('palavra que acende', () => {
   it('preenche de 0 a 1 ao longo da palavra', () => {
     const palavra = { texto: 'Help', inicio: 2, fim: 3 }
     expect([1, 2.25, 3, 4].map((t) => preenchimento(palavra, t))).toEqual([0, 0.25, 1, 1])
+  })
+})
+
+describe('formatarAtraso', () => {
+  it('sinal, vírgula e zero sem sinal', () => {
+    expect([0.55, -0.05, -1.2, 0, 2].map(formatarAtraso)).toEqual(['+0,55 s', '−0,05 s', '−1,2 s', '0 s', '+2 s'])
   })
 })

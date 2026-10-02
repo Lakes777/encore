@@ -355,14 +355,18 @@ describe('letra', () => {
     irPara(6.6)
     expect(screen.getByRole('button', { name: 'verso 2' })).toHaveAttribute('aria-current', 'true')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Atrasar a letra 0,1 segundo' }))
-    expect(api.definirAtrasoLetra).toHaveBeenLastCalledWith(ID, 0.6)
-    expect(valor()).toHaveTextContent('+0,6 s')
+    const atrasar = screen.getByRole('button', { name: 'Atrasar a letra 0,1 segundo' })
+    await userEvent.click(atrasar)
+    await userEvent.click(atrasar)
+    expect(valor()).toHaveTextContent('+0,7 s') // a tela muda na hora
     expect(screen.getByText('(ajustado)')).toBeInTheDocument()
+    // Cliques seguidos viram um pedido só, com o valor final
+    await waitFor(() => expect(api.definirAtrasoLetra).toHaveBeenCalledTimes(1), { timeout: 2000 })
+    expect(api.definirAtrasoLetra).toHaveBeenLastCalledWith(ID, 0.7)
 
     await userEvent.click(screen.getByRole('button', { name: 'Voltar ao automático' }))
-    expect(api.definirAtrasoLetra).toHaveBeenLastCalledWith(ID, null)
     expect(valor()).toHaveTextContent('+0,5 s')
+    await waitFor(() => expect(api.definirAtrasoLetra).toHaveBeenLastCalledWith(ID, null), { timeout: 2000 })
   })
 
   it('usa o atraso salvo e desfaz o clique se não conseguir salvar', async () => {
@@ -371,8 +375,33 @@ describe('letra', () => {
     const valor = () => document.querySelector('.sincronia__valor')
     expect(valor()).toHaveTextContent('−1 s')
     await userEvent.click(screen.getByRole('button', { name: 'Adiantar a letra 0,1 segundo' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('não respondeu')
+    expect(valor()).toHaveTextContent('−1,1 s')
+    expect(await screen.findByRole('alert', {}, { timeout: 2000 })).toHaveTextContent('não respondeu')
     expect(valor()).toHaveTextContent('−1 s')
+  })
+
+  it('um pedido antigo que falha não desfaz um novo que deu certo', async () => {
+    let falharPrimeiro: (motivo: Error) => void = () => {}
+    vi.mocked(api.definirAtrasoLetra)
+      .mockImplementationOnce(() => new Promise((_, falhar) => (falharPrimeiro = falhar)))
+      .mockResolvedValue({ atraso: 0.2 })
+    await abrir(umaMusica({ atraso_letra: 0 }))
+    const valor = () => document.querySelector('.sincronia__valor')
+    const atrasar = screen.getByRole('button', { name: 'Atrasar a letra 0,1 segundo' })
+    await userEvent.click(atrasar)
+    await waitFor(() => expect(api.definirAtrasoLetra).toHaveBeenCalledTimes(1), { timeout: 2000 })
+    await userEvent.click(atrasar)
+    await waitFor(() => expect(api.definirAtrasoLetra).toHaveBeenCalledTimes(2), { timeout: 2000 })
+    falharPrimeiro(new ErroApi(0, 'falhou'))
+    await new Promise((pronto) => setTimeout(pronto, 50))
+    expect(valor()).toHaveTextContent('+0,2 s')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('não passa do limite de 10 s do servidor', async () => {
+    await abrir(umaMusica({ atraso_letra: 9.95 }))
+    expect(screen.getByRole('button', { name: 'Atrasar a letra 0,1 segundo' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Adiantar a letra 0,1 segundo' })).toBeEnabled()
   })
 
   it('letra sem tempo aparece inteira, sem botões', async () => {

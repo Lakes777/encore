@@ -18,8 +18,15 @@ a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra
 3. Na lista, cada música mostra o **tom** e a **escala** (ex.: "A maior") e se já tem letra.
 4. Escolher a letra entre as versões sincronizadas do [LRCLIB](https://lrclib.net) e a capa pela
    [iTunes Search API](https://performance-partners.apple.com/search-api).
-5. Cantar: letra sincronizada, volume separado da voz e dos vocais de apoio, tela cheia, botão para
-   tocar a original e imagem de fundo com desfoque ajustável.
+5. Cantar: letra sincronizada com a **palavra que acende** conforme a voz soa, volume separado da voz
+   e dos vocais de apoio, tela cheia, botão para tocar a original e imagem de fundo com desfoque ajustável.
+6. Treinar: **velocidade** de 50% a 150% sem mudar o tom e **metrônomo** alinhado às batidas da música.
+
+A letra do LRCLIB muitas vezes foi sincronizada com outra edição da música (no Help!, a voz vinha
+0,5 s depois de quase todos os versos). O site acha esse atraso sozinho, encaixando os versos nos
+trechos em que a voz principal soa, e dá para ajustar à mão de 0,1 em 0,1 s. O LRCLIB quase nunca
+tem o tempo de cada palavra, então a palavra que acende é estimada: o tempo de voz do verso é
+dividido entre as palavras pelo número de sílabas.
 
 ## Separação com IA: o que foi medido
 
@@ -176,6 +183,10 @@ Fase 1: karaokê
 - [x] Salvar os volumes de cada música (a tela salva sozinha, 0,7 s depois da última mudança)
 - [x] Cancelar a música que está sendo preparada (a separação roda num processo à parte, que é encerrado)
 - [x] BPM e batidas (do instrumental) e os trechos em que a voz principal soa, para acender as palavras da letra; `python -m karaoke.ritmo <pasta>` completa as músicas antigas
+- [x] Velocidade sem mudar o tom (playbackRate + preservesPitch) e metrônomo pelo Web Audio, agendado à frente para não atrasar
+- [x] Sincronia da letra automática (pelos trechos de voz) e manual, salva por música
+- [x] Palavra que acende, estimada pelas sílabas dentro do tempo de voz de cada verso
+- [ ] Levar velocidade e metrônomo para o modo instrumento quando ele existir
 - [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 
 Fase 2: versões prontas

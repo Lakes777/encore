@@ -31,6 +31,10 @@ export function useMetronomo({ batidas, ligado, tocando, volume, velocidade, tem
       // A janela é em tempo de relógio; em tempo de música ela anda `vel` vezes mais rápido
       const resultado = batidasParaAgendar(batidas, tempo, JANELA_DO_METRONOMO * vel, proxima)
       proxima = resultado.proxima
+      if (resultado.pulou) {
+        for (const oscilador of agendados) oscilador.stop()
+        agendados.clear()
+      }
       for (const { daquiA } of resultado.agendar) {
         const oscilador = clique(audio, audio.currentTime + daquiA / vel, vol)
         agendados.add(oscilador)

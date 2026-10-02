@@ -29,7 +29,8 @@ export function batidasParaAgendar(batidas: readonly number[], tempo: number, ja
     agendar.push({ indice, daquiA: Math.max(0, batidas[indice] - tempo) })
     indice++
   }
-  return { agendar, proxima: indice }
+  // `pulou`: já havia agendado e o tempo saiu da sequência (os cliques marcados ficaram fora do lugar)
+  return { agendar, proxima: indice, pulou: perdida && proxima >= 0 }
 }
 
 function primeiraDepois(batidas: readonly number[], tempo: number) {
