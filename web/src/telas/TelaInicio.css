@@ -441,8 +441,34 @@
   transition: opacity 0.15s var(--ease-out);
 }
 
-.musica__capa-link:hover .musica__cantar {
-  opacity: 1;
+/* O cartão inteiro abre a música: o link do título se estica por cima dele
+   ("link esticado"; continua um link só para o teclado e o leitor de tela).
+   Os botões, a prévia e as dicas do "versão pronta" ficam por cima do link. */
+.musica__titulo a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.musica__acoes,
+.musica .previa,
+.musica__detalhes span[title] {
+  position: relative;
+  z-index: 3;
+}
+
+/* Com o mouse no cartão (fora dos botões e da prévia), o microfone da capa e o
+   título avisam que o clique abre a música */
+@media (hover: hover) {
+  .musica:hover:not(:has(.musica__acoes:hover, .previa:hover)) .musica__cantar {
+    opacity: 1;
+  }
+
+  .musica:hover:not(:has(.musica__acoes:hover, .previa:hover)) .musica__titulo a {
+    color: var(--destaque);
+  }
 }
 
 /* A capa chega um pouco mais perto quando o cartão sobe */
