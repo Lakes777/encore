@@ -236,6 +236,47 @@ describe('volumes', () => {
   })
 })
 
+describe('metrônomo', () => {
+  it('sem batidas não aparece', async () => {
+    await abrir()
+    expect(screen.queryByRole('heading', { name: 'Metrônomo' })).not.toBeInTheDocument()
+  })
+
+  it('ligado e tocando, agenda um clique em cada batida seguindo a velocidade', async () => {
+    const inicios: number[] = []
+    class OsciladorFalso {
+      frequency = { value: 0 }
+      onended: (() => void) | null = null
+      connect = (no: unknown) => no
+      start = (quando: number) => inicios.push(quando)
+      stop = vi.fn()
+    }
+    class AudioContextFalso {
+      currentTime = 100
+      destination = {}
+      resume = vi.fn(async () => {})
+      close = vi.fn(async () => {})
+      createOscillator = () => new OsciladorFalso()
+      createGain = () => ({ gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: (no: unknown) => no })
+    }
+    vi.stubGlobal('AudioContext', AudioContextFalso)
+
+    await abrir(umaMusica({ bpm: 120, batidas: [2, 2.5, 3, 3.5] }))
+    liberarFaixas()
+    expect(screen.getByText('120 BPM')).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('slider', { name: 'Velocidade da música' }), { target: { value: '50' } })
+    expect(screen.getByText('(60 agora)')).toBeInTheDocument()
+
+    irPara(1.95)
+    await userEvent.click(screen.getByRole('button', { name: 'Desligado' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Tocar' }))
+    // Na metade da velocidade, a batida de 2 s (0,05 s de música adiante) toca 0,1 s de relógio depois
+    await waitFor(() => expect(inicios).toHaveLength(1))
+    expect(inicios[0]).toBeCloseTo(100.1)
+    vi.unstubAllGlobals()
+  })
+})
+
 describe('velocidade', () => {
   it('muda a velocidade de todas as faixas sem mudar o tom e volta ao normal', async () => {
     await abrir()

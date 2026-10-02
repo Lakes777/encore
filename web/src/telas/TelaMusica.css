@@ -235,6 +235,27 @@ button.letra__verso:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.metronomo__linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.metronomo__bpm {
+  font-variant-numeric: tabular-nums;
+}
+
+.metronomo__volume {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+  font-size: 0.875rem;
+}
+
+.metronomo__volume input {
+  width: 100%;
+}
+
 .sincronia__linha {
   display: flex;
   align-items: center;

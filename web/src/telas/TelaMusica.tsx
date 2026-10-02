@@ -2,6 +2,7 @@ import { ArrowLeft, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw } from 
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { ControleDesfoque } from '../componentes/ControleDesfoque.tsx'
 import { Letra } from '../componentes/Letra.tsx'
+import { Metronomo } from '../componentes/Metronomo.tsx'
 import { SincroniaLetra } from '../componentes/SincroniaLetra.tsx'
 import { Velocidade } from '../componentes/Velocidade.tsx'
 import { Volumes } from '../componentes/Volumes.tsx'
@@ -11,6 +12,7 @@ import { deslocarVersos, estimarAtraso, letraSincronizada } from '../logica/letr
 import { LINK_INICIO } from '../logica/rota.ts'
 import { mensagemDoErro } from '../logica/mensagem.ts'
 import { DESFOQUE_PADRAO, type Musica, type Verso } from '../logica/tipos.ts'
+import { useMetronomo } from '../logica/useMetronomo.ts'
 import { usePlayer } from '../logica/usePlayer.ts'
 import { useSalvarVolumes } from '../logica/useSalvarVolumes.ts'
 import { estadoInicialDosVolumes, volumeEfetivo } from '../logica/volumes.ts'
@@ -18,6 +20,8 @@ import './TelaMusica.css'
 
 /** Quanto os botões de voltar/avançar pulam. */
 const PULO = 5
+/** Lista vazia fixa: uma nova a cada render reiniciaria o metrônomo. */
+const SEM_BATIDAS: number[] = []
 
 type Carregamento =
   | { estado: 'carregando' }
@@ -93,6 +97,17 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
   const atraso = atrasoSalvo ?? estimado ?? 0
   const versosNoTempo = useMemo(() => (versos ? deslocarVersos(versos, atraso) : null), [versos, atraso])
   const player = usePlayer(faixas, musica.duracao, velocidade)
+  const batidas = musica.batidas ?? SEM_BATIDAS
+  const [metronomoLigado, setMetronomoLigado] = useState(false)
+  const [volumeMetronomo, setVolumeMetronomo] = useState(0.6)
+  useMetronomo({
+    batidas,
+    ligado: metronomoLigado,
+    tocando: player.tocando,
+    volume: volumeMetronomo,
+    velocidade,
+    tempoDaMusica: player.tempoAgora,
+  })
   const [volumes, setVolumes] = useState(() => estadoInicialDosVolumes(faixas))
   const salvamento = useSalvarVolumes(musica.id, faixas, volumes.volumes)
   const [desfoque, setDesfoque] = useState(() => musica.fundo?.desfoque ?? DESFOQUE_PADRAO)
@@ -194,6 +209,16 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
             </p>
           )}
           <Velocidade velocidade={velocidade} aoMudar={setVelocidade} />
+          {batidas.length > 0 && (
+            <Metronomo
+              bpm={musica.bpm ?? null}
+              velocidade={velocidade}
+              ligado={metronomoLigado}
+              volume={volumeMetronomo}
+              aoLigar={setMetronomoLigado}
+              aoMudarVolume={setVolumeMetronomo}
+            />
+          )}
           {sincronizada && (
             <SincroniaLetra idMusica={musica.id} atrasoSalvo={atrasoSalvo} estimado={estimado} aoMudar={setAtrasoSalvo} />
           )}

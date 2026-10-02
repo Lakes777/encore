@@ -151,5 +151,8 @@ export function usePlayer(faixas: readonly Faixa[], duracaoConhecida: number | n
     }
   }
 
-  return { audios, tocando, tempo, duracao, todasProntas, erro, tocar, pausar, alternar, pular, propsDoAudio }
+  /** Tempo da música agora, direto do mestre (o `tempo` do estado só muda a cada quadro). */
+  const tempoAgora = () => mestre()?.currentTime ?? 0
+
+  return { audios, tocando, tempo, duracao, todasProntas, erro, tocar, pausar, alternar, pular, propsDoAudio, tempoAgora }
 }

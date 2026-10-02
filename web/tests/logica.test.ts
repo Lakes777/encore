@@ -3,6 +3,7 @@ import { api, ErroApi, urlDaFaixa } from '../src/logica/api.ts'
 import { descricaoTom, formatarDuracao, formatarEstimativa } from '../src/logica/formatar.ts'
 import { lerRota, linkDaMusica } from '../src/logica/rota.ts'
 import { ajustarVelocidade } from '../src/logica/velocidade.ts'
+import { batidasParaAgendar } from '../src/logica/metronomo.ts'
 import { deslocarVersos, estimarAtraso, type TrechoDeVoz } from '../src/logica/letra.ts'
 
 describe('rota', () => {
@@ -105,5 +106,26 @@ describe('atraso da letra', () => {
     expect(estimarAtraso(versos([1, 2, 3]), [[1, 2]])).toBeNull()
     expect(estimarAtraso(versos([5, 9, 13, 17, 21]), [])).toBeNull()
     expect(estimarAtraso(versos([5, 9, 13, 17, 21]), [[50, 60], [70, 80]])).toBeNull()
+  })
+})
+
+describe('metrônomo', () => {
+  const batidas = [0.5, 1.1, 1.7, 2.3, 2.9]
+
+  it('agenda só as batidas da janela, uma vez cada', () => {
+    const primeiro = batidasParaAgendar(batidas, 1.0, 0.15, -1)
+    expect(primeiro.agendar.map((a) => a.indice)).toEqual([1])
+    expect(primeiro.agendar[0].daquiA).toBeCloseTo(0.1)
+    expect(batidasParaAgendar(batidas, 1.05, 0.15, primeiro.proxima).agendar).toEqual([]) // já agendada
+    expect(batidasParaAgendar(batidas, 1.6, 0.15, primeiro.proxima).agendar.map((a) => a.indice)).toEqual([2])
+  })
+
+  it('pulo para trás ou para frente recomeça da batida seguinte', () => {
+    expect(batidasParaAgendar(batidas, 0.4, 0.15, 4).agendar.map((a) => a.indice)).toEqual([0])
+    expect(batidasParaAgendar(batidas, 2.8, 0.15, 1).agendar.map((a) => a.indice)).toEqual([4])
+  })
+
+  it('no fim da música não agenda nada', () => {
+    expect(batidasParaAgendar(batidas, 3.5, 0.15, -1)).toEqual({ agendar: [], proxima: 5 })
   })
 })
