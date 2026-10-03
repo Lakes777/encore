@@ -12,12 +12,14 @@ a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra
 > contra os termos de uso da plataforma, por isso o app não é hospedado publicamente.
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Demonstração: buscando Like a Stone do Audioslave, com prévia e opções de qualidade em cada resultado; abrindo Bat Country, clicando numa linha da letra para pular até ela, tocando com as palavras acendendo no ritmo, silenciando a voz principal e passando pelas abas Treino e Ajustes" width="800">
+  <img src="docs/demo.gif" alt="Demonstração: começando na página inicial, indo à aba Buscar e procurando Like a Stone do Audioslave, com as opções de qualidade e a prévia tocando; abrindo Bat Country em Minhas músicas, clicando numa linha da letra para pular até ela, tocando com as palavras acendendo no ritmo, silenciando a voz principal e passando pelas abas Treino e Ajustes" width="800">
 </p>
 
-![Tela inicial: busca e a lista de músicas prontas, cada uma com capa, título limpo, tom e botões de prévia, letra, fundo, exportar e apagar](docs/inicio.png)
+![Página inicial: o nome Encore, os destaques do projeto (voz separada com IA, letra sincronizada e modo treino) e o botão Começar, com pranchas de áudio passando no fundo](docs/lobby.png)
 
-![Tela da música: letra sincronizada no centro, painel com as abas Volumes, Treino e Ajustes, e o player embaixo](docs/musica.png)
+![Aba Minhas músicas: a lista de músicas prontas, cada uma com capa, título limpo, tom e botões de prévia, letra, fundo, exportar e apagar](docs/inicio.png)
+
+![Tela da música: letra sincronizada com a palavra que acende, painel com as abas Volumes, Treino e Ajustes (voz principal no mudo) e o player embaixo, com as cores tiradas da capa](docs/musica.png)
 
 <p align="center">
   <img src="docs/celular.png" alt="Tela da música no celular: letra livre e os controles numa gaveta fechada" width="260">
