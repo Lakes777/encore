@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CHAVE_ABA_DA_MUSICA } from '../src/logica/abaDaMusica.ts'
 import { api, ErroApi } from '../src/logica/api.ts'
 import type { Musica, Verso } from '../src/logica/tipos.ts'
 import { TelaMusica } from '../src/telas/TelaMusica.tsx'
@@ -533,5 +534,54 @@ describe('painel de controles', () => {
   it('sem letra sincronizada nem imagem, não há a aba Ajustes', async () => {
     await abrir(umaMusica({ fundo: undefined }), LETRA.map((verso) => ({ ...verso, tempo: null })))
     expect(screen.getAllByRole('tab').map((aba) => aba.textContent)).toEqual(['Volumes', 'Treino'])
+  })
+})
+
+describe('lembrar a aba', () => {
+  const abaAberta = () => screen.getByRole('tab', { selected: true })
+
+  it('volta na última aba escolhida ao sair e voltar, mesmo em outra música', async () => {
+    await abrir()
+    expect(abaAberta()).toHaveTextContent('Volumes')
+    abrirAba('Treino')
+    expect(localStorage.getItem(CHAVE_ABA_DA_MUSICA)).toBe('treino')
+    cleanup()
+
+    await abrir(umaMusica({ titulo: 'Like a Stone' }))
+    expect(abaAberta()).toHaveTextContent('Treino')
+    expect(screen.getByRole('slider', { name: 'Velocidade da música' })).toBeVisible()
+  })
+
+  it('trocar pelo teclado também fica salvo', async () => {
+    await abrir()
+    screen.getByRole('tab', { name: 'Volumes' }).focus()
+    await userEvent.keyboard('{End}')
+    expect(localStorage.getItem(CHAVE_ABA_DA_MUSICA)).toBe('ajustes')
+  })
+
+  it('valor inválido no navegador abre na primeira aba', async () => {
+    localStorage.setItem(CHAVE_ABA_DA_MUSICA, 'qualquer-coisa')
+    await abrir()
+    expect(abaAberta()).toHaveTextContent('Volumes')
+  })
+
+  it('Ajustes salvo numa música sem Ajustes abre na primeira, sem esquecer a escolha', async () => {
+    localStorage.setItem(CHAVE_ABA_DA_MUSICA, 'ajustes')
+    await abrir(umaMusica({ fundo: undefined }), LETRA.map((verso) => ({ ...verso, tempo: null })))
+    expect(abaAberta()).toHaveTextContent('Volumes')
+    expect(localStorage.getItem(CHAVE_ABA_DA_MUSICA)).toBe('ajustes')
+  })
+
+  it('navegador que não deixa ler nem gravar não quebra a tela', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('bloqueado', 'SecurityError')
+    })
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('cheio', 'QuotaExceededError')
+    })
+    await abrir()
+    expect(abaAberta()).toHaveTextContent('Volumes')
+    abrirAba('Treino')
+    expect(abaAberta()).toHaveTextContent('Treino')
   })
 })

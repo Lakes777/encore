@@ -8,6 +8,7 @@ import { Metronomo } from '../componentes/Metronomo.tsx'
 import { SincroniaLetra } from '../componentes/SincroniaLetra.tsx'
 import { Velocidade } from '../componentes/Velocidade.tsx'
 import { Volumes } from '../componentes/Volumes.tsx'
+import { lerAbaDaMusica, salvarAbaDaMusica } from '../logica/abaDaMusica.ts'
 import { api, ErroApi, urlDaFaixa } from '../logica/api.ts'
 import { descricaoTom, formatarDuracao, nomeDaMusica } from '../logica/formatar.ts'
 import { deslocarVersos, estimarAtraso, letraSincronizada } from '../logica/letra.ts'
@@ -127,6 +128,8 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
   // Sem matchMedia (como no jsdom), trata como tela larga: painel aberto.
   const [painelAberto, setPainelAberto] = useState(() => window.matchMedia?.(TELA_LARGA).matches ?? true)
   const botaoControles = useRef<HTMLButtonElement>(null)
+  // A última aba escolhida (lida uma vez só; sem Ajustes nesta música, as Abas caem na primeira)
+  const [abaInicial] = useState(() => lerAbaDaMusica() ?? undefined)
   // Destaques na cor da capa (o roxo padrão enquanto lê ou se a capa não deixar ler)
   const paleta = useCoresDaCapa(capaDaMusica(musica))
 
@@ -299,6 +302,8 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
           <Abas
             rotulo="Grupos de controles"
             abas={abas}
+            inicial={abaInicial}
+            aoTrocar={salvarAbaDaMusica}
             extra={
               <button
                 type="button"

@@ -12,6 +12,10 @@ interface Props {
   rotulo: string
   /** Algo ao lado das abas (ex.: o botão de fechar o painel). */
   extra?: ReactNode
+  /** Aba que começa aberta (se não existir, a primeira). */
+  inicial?: string
+  /** Avisado quando a pessoa troca de aba (clique ou teclado). */
+  aoTrocar?: (id: string) => void
 }
 
 /**
@@ -19,12 +23,17 @@ interface Props {
  * As que não estão abertas ficam montadas, só escondidas: assim nada que estava
  * salvando ou tocando (metrônomo, sincronia da letra) é interrompido ao trocar.
  */
-export function Abas({ abas, rotulo, extra }: Props) {
+export function Abas({ abas, rotulo, extra, inicial, aoTrocar }: Props) {
   const base = useId()
-  const [escolhida, setEscolhida] = useState(abas[0]?.id)
+  const [escolhida, setEscolhida] = useState(inicial ?? abas[0]?.id)
   // Se a aba escolhida deixar de existir, volta para a primeira
   const ativa = abas.some((aba) => aba.id === escolhida) ? escolhida : abas[0]?.id
   const botoes = useRef(new Map<string, HTMLButtonElement>())
+
+  function escolher(id: string) {
+    setEscolhida(id)
+    aoTrocar?.(id)
+  }
 
   function aoTeclar(evento: KeyboardEvent) {
     const indice = abas.findIndex((aba) => aba.id === ativa)
@@ -37,7 +46,7 @@ export function Abas({ abas, rotulo, extra }: Props) {
     if (destino == null) return
     evento.preventDefault()
     const id = abas[destino].id
-    setEscolhida(id)
+    escolher(id)
     botoes.current.get(id)?.focus()
   }
 
@@ -59,7 +68,7 @@ export function Abas({ abas, rotulo, extra }: Props) {
               aria-selected={aba.id === ativa}
               aria-controls={`${base}-painel-${aba.id}`}
               tabIndex={aba.id === ativa ? 0 : -1}
-              onClick={() => setEscolhida(aba.id)}
+              onClick={() => escolher(aba.id)}
             >
               {aba.rotulo}
             </button>
