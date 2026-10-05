@@ -8,6 +8,7 @@ import { ajustarVelocidade } from '../src/logica/velocidade.ts'
 import { batidasParaAgendar } from '../src/logica/metronomo.ts'
 import { preenchimento, silabas, tempoDasPalavras } from '../src/logica/palavras.ts'
 import { deslocarVersos, estimarAtraso, indiceDoVersoAtual, type TrechoDeVoz } from '../src/logica/letra.ts'
+import { CHAVE_ABA_DA_MUSICA, lerAbaDaMusica, salvarAbaDaMusica } from '../src/logica/abaDaMusica.ts'
 
 describe('rota', () => {
   it('lê a tela da música pelo hash', () => {
@@ -260,5 +261,20 @@ describe('cores da capa', () => {
   it('contraste: preto e branco é 21, a mesma cor é 1', () => {
     expect(contraste([0, 0, 0], [255, 255, 255])).toBeCloseTo(21)
     expect(contraste([90, 40, 200], [90, 40, 200])).toBeCloseTo(1)
+  })
+})
+
+describe('aba da música', () => {
+  it('lê só uma aba que existe', () => {
+    localStorage.setItem(CHAVE_ABA_DA_MUSICA, 'treino')
+    expect(lerAbaDaMusica()).toBe('treino')
+    localStorage.setItem(CHAVE_ABA_DA_MUSICA, 'qualquer-coisa')
+    expect(lerAbaDaMusica()).toBeNull()
+  })
+
+  it('não grava uma aba que não existe', () => {
+    salvarAbaDaMusica('ajustes')
+    salvarAbaDaMusica('outra')
+    expect(localStorage.getItem(CHAVE_ABA_DA_MUSICA)).toBe('ajustes')
   })
 })
