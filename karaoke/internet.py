@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 # O LRCLIB pede que cada app se identifique
-AGENTE = "karaoke-web (projeto de estudo; github.com/Lakes777/karaoke-web)"
+AGENTE = "Encore (projeto de estudo; github.com/Lakes777/encore)"
 TEMPO_LIMITE = 15  # segundos
 
 

@@ -5,7 +5,7 @@ import { LINK_DA_ABA } from '../logica/rota.ts'
 import './TelaLobby.css'
 
 /** Endereço do código do projeto no GitHub. */
-export const LINK_GITHUB = 'https://github.com/Lakes777/karaoke-web'
+export const LINK_GITHUB = 'https://github.com/Lakes777/encore'
 
 interface Props {
   /** Quantas músicas já estão prontas (null enquanto carrega ou se falhou): decide para onde o "Começar" leva. */

@@ -1,6 +1,6 @@
 # Encore
 
-[![Testes](https://github.com/Lakes777/karaoke-web/actions/workflows/testes.yml/badge.svg)](https://github.com/Lakes777/karaoke-web/actions/workflows/testes.yml)
+[![Testes](https://github.com/Lakes777/encore/actions/workflows/testes.yml/badge.svg)](https://github.com/Lakes777/encore/actions/workflows/testes.yml)
 
 **Encore · karaokê com IA.** Karaokê que roda no próprio computador: você busca uma música do YouTube, o app separa
 a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra a
