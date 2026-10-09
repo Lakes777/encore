@@ -116,7 +116,8 @@ describe('abas', () => {
     // Durante o fade de saída a aba antiga ainda está lá
     expect(screen.getByRole('heading', { name: 'Buscar' }).closest('.aba-tela')).toHaveClass('aba-tela--saindo')
     const fila = await screen.findByRole('heading', { name: 'Fila' })
-    expect(fila).toHaveFocus()
+    // O foco vai para o título logo depois de a aba aparecer (não no mesmo instante)
+    await waitFor(() => expect(fila).toHaveFocus())
     expect(screen.queryByRole('heading', { name: 'Buscar' })).not.toBeInTheDocument()
 
     rerender(<TelaInicio aba="buscar" />)
