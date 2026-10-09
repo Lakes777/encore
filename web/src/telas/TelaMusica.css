@@ -14,11 +14,12 @@
      um controle pelo teclado rolava a tela inteira para o lado e para cima */
   overflow: clip;
   background: var(--bg);
-  /* Os destaques passam do roxo para a cor da capa devagar (cores registradas no index.css) */
+  /* Os destaques passam do laranja para a cor da capa devagar (cores registradas no index.css) */
   transition:
-    --roxo 0.9s ease,
-    --roxo-escuro 0.9s ease,
-    --destaque 0.9s ease;
+    --marca 0.9s ease,
+    --marca-escura 0.9s ease,
+    --destaque 0.9s ease,
+    --sobre-marca 0.2s ease 0.45s;
 }
 
 /* Luz na cor da capa vinda de baixo, atrás da letra; acende mais enquanto toca */
@@ -28,7 +29,7 @@
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(70% 55% at 50% 105%, color-mix(in srgb, var(--roxo) 32%, transparent), transparent 70%),
+    radial-gradient(70% 55% at 50% 105%, color-mix(in srgb, var(--marca) 32%, transparent), transparent 70%),
     radial-gradient(40% 35% at 85% 0%, color-mix(in srgb, var(--destaque) 10%, transparent), transparent 70%);
   opacity: 0.55;
   transition: opacity 1.2s ease;
@@ -82,7 +83,7 @@
   position: absolute;
   inset: 0;
   z-index: -2;
-  background: rgb(13 14 16 / 0.78);
+  background: rgb(18 16 16 / 0.78);
 }
 
 .tela-musica__topo {
@@ -137,11 +138,56 @@
 }
 
 .tela-musica__letra {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+/* Equalizador no pé da letra, bem apagado e na cor da capa (--marca). Some com a música
+   pausada (parado, ele parecia uma linha tracejada sobre a letra) e pulsa enquanto ela
+   toca. Só transform e opacity, para não refazer o layout. */
+.tela-musica__eq {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 0;
+  z-index: -1;
+  height: 48px;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s var(--ease-out);
+}
+
+.tela-musica--tocando .tela-musica__eq {
+  opacity: 0.22;
+}
+
+.tela-musica__eq i {
+  flex: 1;
+  height: 100%;
+  background: var(--marca);
+  transform: scaleY(0.12);
+  transform-origin: bottom;
+}
+
+.tela-musica--tocando .tela-musica__eq i {
+  animation: tela-musica-eq 1.1s ease-in-out infinite;
+}
+
+@keyframes tela-musica-eq {
+  0%,
+  100% {
+    transform: scaleY(0.15);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }
 
 .tela-musica__sem-letra {
@@ -177,7 +223,7 @@
   gap: 2px;
   padding: 3px;
   border-radius: var(--radius-pequeno);
-  background: rgb(13 14 16 / 0.8);
+  background: rgb(18 16 16 / 0.8);
 }
 
 .abas__aba {
@@ -202,7 +248,7 @@
 .abas__aba[aria-selected='true'] {
   background: var(--surface-hover);
   color: var(--text);
-  box-shadow: inset 0 -2px 0 var(--roxo);
+  box-shadow: inset 0 -2px 0 var(--marca);
 }
 
 .abas__painel {
@@ -297,6 +343,7 @@
   opacity: 0.45;
   font: inherit;
   font-size: 1.25rem;
+  font-weight: 600;
   line-height: 1.4;
   text-align: center;
   transition: opacity 0.25s var(--ease-out), color 0.25s var(--ease-out);
@@ -317,10 +364,10 @@ button.letra__verso:hover {
 .letra__verso--atual {
   color: var(--destaque);
   opacity: 1;
-  font-weight: 700;
+  font-weight: 800;
 }
 
-/* Palavra que acende: o roxo enche a palavra da esquerda para a direita conforme é cantada */
+/* Palavra que acende: o destaque enche a palavra da esquerda para a direita conforme é cantada */
 .letra__palavra {
   background-image: linear-gradient(
     90deg,
@@ -468,7 +515,7 @@ button.letra__verso:hover {
   flex: none;
   padding: 12px 16px 14px;
   border-top: 1px solid rgb(42 44 49 / 0.8);
-  background: rgb(13 14 16 / 0.8);
+  background: rgb(18 16 16 / 0.8);
   backdrop-filter: blur(10px);
 }
 
@@ -532,10 +579,10 @@ button.letra__verso:hover {
 @keyframes pulsar-brilho {
   0%,
   100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--roxo) 55%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--marca) 55%, transparent);
   }
   50% {
-    box-shadow: 0 0 22px 4px color-mix(in srgb, var(--roxo) 45%, transparent);
+    box-shadow: 0 0 22px 4px color-mix(in srgb, var(--marca) 45%, transparent);
   }
 }
 
@@ -544,7 +591,7 @@ button.letra__verso:hover {
 }
 
 .tela-musica__alternar[aria-expanded='true'] {
-  border-color: var(--roxo);
+  border-color: var(--marca);
   color: var(--destaque);
 }
 

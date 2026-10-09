@@ -15,6 +15,13 @@ vi.mock('../src/logica/api.ts', async (original) => {
   }
 })
 
+// As cores da capa vêm de um <img> num <canvas>, que o jsdom não desenha: o teste escolhe a paleta.
+const cores = vi.hoisted(() => ({ paleta: null as null | { forte: string; escuro: string; claro: string } }))
+vi.mock('../src/logica/cores.ts', async (original) => {
+  const modulo = await original<typeof import('../src/logica/cores.ts')>()
+  return { ...modulo, useCoresDaCapa: () => cores.paleta }
+})
+
 const ID = '989ba3f6818c'
 
 function umaMusica(extra: Partial<Musica> = {}): Musica {
@@ -86,12 +93,39 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  cores.paleta = null
   vi.restoreAllMocks()
   vi.mocked(api.musica).mockReset()
   vi.mocked(api.letra).mockReset()
   vi.mocked(api.definirFundo).mockReset()
   // definirVolumes não é zerado aqui: ao desmontar, a tela ainda salva o que faltava.
   vi.mocked(api.definirVolumes).mockClear()
+})
+
+describe('cores e equalizador', () => {
+  it('sem a paleta da capa fica o laranja padrão; com ela, a tela troca a marca e põe texto branco por cima', async () => {
+    await abrir()
+    const tela = document.querySelector('.tela-musica') as HTMLElement
+    expect(tela).toHaveAttribute('data-cores', 'padrao')
+    expect(tela.style.getPropertyValue('--marca')).toBe('')
+    cleanup()
+
+    cores.paleta = { forte: '#6a3a1c', escuro: '#55301a', claro: '#e8b07a' }
+    await abrir()
+    const comCapa = document.querySelector('.tela-musica') as HTMLElement
+    expect(comCapa).toHaveAttribute('data-cores', 'capa')
+    expect(comCapa.style.getPropertyValue('--marca')).toBe('#6a3a1c')
+    expect(comCapa.style.getPropertyValue('--marca-escura')).toBe('#55301a')
+    expect(comCapa.style.getPropertyValue('--destaque')).toBe('#e8b07a')
+    expect(comCapa.style.getPropertyValue('--sobre-marca')).toBe('#fff')
+  })
+
+  it('o equalizador é enfeite e fica dentro da letra', async () => {
+    await abrir()
+    const eq = document.querySelector('.tela-musica__letra .tela-musica__eq')
+    expect(eq).toHaveAttribute('aria-hidden', 'true')
+    expect(eq!.querySelectorAll('i').length).toBeGreaterThan(10)
+  })
 })
 
 describe('carregar', () => {

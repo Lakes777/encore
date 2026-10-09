@@ -23,6 +23,9 @@ import { capaDaMusica } from '../logica/youtube.ts'
 import { useCoresDaCapa } from '../logica/cores.ts'
 import './TelaMusica.css'
 
+
+/** Atrasos das barras do equalizador (em segundos): cada uma sobe num tempo, sem padrão. */
+const BARRAS_DO_EQUALIZADOR = [0.1, 0.5, 0.3, 0.8, 0.2, 0.6, 0.4, 0.9, 0.15, 0.7, 0.35, 0.55, 0.25, 0.85, 0.45, 0.65, 0.05, 0.75, 0.32, 0.95]
 /** Quanto os botões de voltar/avançar pulam. */
 const PULO = 5
 /** Lista vazia fixa: uma nova a cada render reiniciaria o metrônomo. */
@@ -130,7 +133,7 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
   const botaoControles = useRef<HTMLButtonElement>(null)
   // A última aba escolhida (lida uma vez só; sem Ajustes nesta música, as Abas caem na primeira)
   const [abaInicial] = useState(() => lerAbaDaMusica() ?? undefined)
-  // Destaques na cor da capa (o roxo padrão enquanto lê ou se a capa não deixar ler)
+  // Destaques na cor da capa (o laranja padrão enquanto lê ou se a capa não deixar ler; a paleta da capa é escura o bastante para texto branco)
   const paleta = useCoresDaCapa(capaDaMusica(musica))
 
   // Os volumes vão direto para os <audio>.
@@ -242,7 +245,7 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
       className={`tela-musica ${tocando ? 'tela-musica--tocando' : ''}`}
       ref={conteiner}
       data-cores={paleta ? 'capa' : 'padrao'}
-      style={paleta ? ({ '--roxo': paleta.forte, '--roxo-escuro': paleta.escuro, '--destaque': paleta.claro } as CSSProperties) : undefined}
+      style={paleta ? ({ '--marca': paleta.forte, '--marca-escura': paleta.escuro, '--destaque': paleta.claro, '--sobre-marca': '#fff' } as CSSProperties) : undefined}
     >
       <div className="tela-musica__brilho" aria-hidden />
       {urlFundo && (
@@ -282,6 +285,12 @@ function Player({ musica, versos, erroLetra }: { musica: Musica; versos: Verso[]
 
       <div className="tela-musica__corpo">
         <section className="tela-musica__letra" aria-label="Letra da música">
+          {/* Equalizador de enfeite no pé da letra, na cor da capa: só pulsa com a música tocando */}
+          <div className="tela-musica__eq" aria-hidden>
+            {BARRAS_DO_EQUALIZADOR.map((atraso, indice) => (
+              <i key={indice} style={{ animationDelay: `-${atraso}s` }} />
+            ))}
+          </div>
           {versos && versos.length > 0 ? (
             <Letra versos={versosNoTempo ?? versos} tempo={tempo} aoPular={player.pular} trechos={musica.trechos_voz} />
           ) : (

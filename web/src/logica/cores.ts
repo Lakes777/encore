@@ -2,23 +2,23 @@ import { useEffect, useState } from 'react'
 
 /**
  * Cores da tela da música tiradas da capa: a cor mais marcante da imagem vira o
- * destaque (botão de tocar, verso cantado, abas), no lugar do roxo padrão.
+ * destaque (botão de tocar, verso cantado, abas), no lugar do laranja padrão.
  * Os tons são ajustados até terem contraste suficiente, então qualquer capa fica legível.
  */
 
 export type Rgb = readonly [number, number, number]
 
 export interface Paleta {
-  /** Fundo de botão com texto branco por cima (o --roxo). */
+  /** Fundo de botão com texto branco por cima (o --marca). */
   forte: string
-  /** O forte ao passar o mouse (o --roxo-escuro). */
+  /** O forte ao passar o mouse (o --marca-escura). */
   escuro: string
   /** Texto e ícones sobre o fundo escuro (o --destaque). */
   claro: string
 }
 
 /** Fundo da página (o --bg), contra o qual o tom claro é medido. */
-const FUNDO: Rgb = [13, 14, 16]
+const FUNDO: Rgb = [18, 16, 16]
 const BRANCO: Rgb = [255, 255, 255]
 
 function rgbParaHsl([r, g, b]: Rgb): [number, number, number] {
@@ -86,7 +86,7 @@ export function corMarcante(pixels: ArrayLike<number>): Rgb | null {
   }
   if (total === 0) return null
   const melhor = peso.indexOf(Math.max(...peso))
-  // Pouca cor (uma capa em preto e branco com um detalhe): fica o roxo padrão
+  // Pouca cor (uma capa em preto e branco com um detalhe): fica o laranja padrão
   if (peso[melhor] < total * 0.02) return null
   const [r, g, b] = soma[melhor].map((v) => Math.round(v / peso[melhor]))
   return [r, g, b]
@@ -149,7 +149,7 @@ export function lerPaleta(url: string): Promise<Leitura> {
   })
 }
 
-/** Paleta da capa, ou null enquanto lê (e quando não dá): aí fica o roxo padrão. */
+/** Paleta da capa, ou null enquanto lê (e quando não dá): aí fica o laranja padrão. */
 export function useCoresDaCapa(url: string | null) {
   const [paleta, setPaleta] = useState<{ url: string; paleta: Paleta | null } | null>(null)
   useEffect(() => {

@@ -69,6 +69,10 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
     <section className="secao" aria-labelledby="titulo-musicas">
       <div className="secao__cabecalho">
         <div className="secao__nome">
+          {/* "Lado A", como na contracapa de um disco: enfeite, o título é o h2 */}
+          <span className="secao__lado" aria-hidden>
+            Lado A
+          </span>
           <h2 id="titulo-musicas">Minhas músicas</h2>
           {musicas && musicas.length > 0 && (
             <span className="contador" aria-label={`${musicas.length} ${musicas.length === 1 ? 'música' : 'músicas'}`}>
@@ -139,7 +143,7 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
       )}
       {musicas && musicas.length > 0 && (
         <ul className="lista">
-          {musicas.map((musica) => {
+          {musicas.map((musica, indice) => {
             const chavePrevia = `musica:${musica.id}`
             const comPrevia = previaAberta === chavePrevia
             const original = musica.faixas.find((faixa) => faixa.nome === NOME_ORIGINAL)
@@ -147,6 +151,10 @@ export function MinhasMusicas({ musicas, erro, aoMudar, previaAberta, abrirPrevi
             return (
               <li key={musica.id} className="cartao musica spot">
                 <div className="musica__linha">
+                  {/* Número da faixa, como na contracapa (enfeite: a lista já diz a posição) */}
+                  <span className="musica__faixa" aria-hidden>
+                    {String(indice + 1).padStart(2, '0')}
+                  </span>
                   {/* A capa também abre a música (fora do Tab: o título já é o link) */}
                   <a href={linkDaMusica(musica.id)} className="musica__capa-link" tabIndex={-1} aria-hidden>
                     <Capa url={capaDaMusica(musica)} className="musica__capa" />

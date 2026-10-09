@@ -1,4 +1,4 @@
-import { Mic } from 'lucide-react'
+import { LogoVinil } from '../componentes/LogoVinil'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Busca } from '../componentes/Busca.tsx'
 import { Fila } from '../componentes/Fila.tsx'
@@ -228,7 +228,7 @@ export function TelaInicio({ aba = 'musicas' }: Props) {
         <header className="inicio__topo">
           {/* O logo e o nome levam de volta ao lobby (o logo fica fora do Tab: o nome já é o link) */}
           <a className="inicio__logo" href={LINK_LOBBY} tabIndex={-1} aria-hidden>
-            <Mic size={22} aria-hidden />
+            <LogoVinil />
           </a>
           <div>
             {/* Um h1 só por tela: no lobby o h1 é o título grande dele */}

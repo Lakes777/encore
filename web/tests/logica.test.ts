@@ -254,7 +254,7 @@ describe('cores da capa', () => {
       const paleta = paletaDaCor(cor)
       expect(contraste([255, 255, 255], hexParaRgb(paleta.forte))).toBeGreaterThanOrEqual(4.5)
       expect(contraste([255, 255, 255], hexParaRgb(paleta.escuro))).toBeGreaterThanOrEqual(4.5)
-      expect(contraste(hexParaRgb(paleta.claro), [13, 14, 16])).toBeGreaterThanOrEqual(7)
+      expect(contraste(hexParaRgb(paleta.claro), [18, 16, 16])).toBeGreaterThanOrEqual(7)
     }
   })
 

@@ -1,29 +1,34 @@
-/* Fundo cinza-grafite (o mesmo dos outros projetos) com o roxo só nos destaques:
-   botão principal, item ativo, barra de progresso, verso cantado agora.
-   Sem emojis; ícones do lucide-react. */
+/* Identidade "Vinil" (disco dos anos 70): fundo preto-café, creme de papel de capa e o
+   laranja só nos destaques: botão principal, item ativo, barra de progresso, verso
+   cantado agora. Títulos em Syne, texto em DM Sans e detalhes em Space Mono.
+   Na tela da música, os destaques tomam a cor da capa do álbum. Sem emojis; ícones do lucide-react. */
 :root {
   color-scheme: dark;
 
-  --bg: #0d0e10;
-  --surface: #16171a;
-  --surface-hover: #1e1f23;
-  --border: #2a2c31;
-  --topo: #121315;
+  --bg: #121010;
+  --surface: #1a1716;
+  --surface-hover: #221e1c;
+  --border: #2d2826;
+  --topo: #121010;
 
-  --text: #e4e5e7;
-  --text-muted: #8e9199;
+  --text: #efe6d8;
+  --text-muted: #a09689;
 
-  /* Roxo cheio só atrás de texto branco; em texto e ícones vai o tom claro. */
-  --roxo: #7c4dcc;
-  --roxo-escuro: #6a3db8;
-  --destaque: #b18cf0;
+  /* Laranja cheio atrás de texto escuro (--sobre-marca); em texto e ícones vai o tom claro.
+     Na tela da música a paleta da capa troca as três e põe texto branco por cima. */
+  --marca: #f08a24;
+  --marca-escura: #d4731a;
+  --destaque: #f4a256;
+  --sobre-marca: #1a1210;
   --ok: #81c784;
   --atencao: #ffd54f;
   --perigo: #ef9a9a;
   /* Borda dos campos: precisa de 3:1 sobre o fundo para o campo não sumir. */
   --borda-campo: #62656d;
 
-  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --titulo: 'Syne', 'DM Sans', system-ui, sans-serif;
+  --mono: 'Space Mono', ui-monospace, monospace;
   --radius: 14px;
   --radius-pequeno: 10px;
   /* As mesmas curvas do portfólio */
@@ -32,23 +37,31 @@
 }
 
 /* Registradas como cor para poderem mudar com transição: na tela da música elas
-   passam do roxo para a cor da capa devagar, em vez de trocar de uma vez. */
-@property --roxo {
+   passam do laranja para a cor da capa devagar, em vez de trocar de uma vez. */
+@property --marca {
   syntax: '<color>';
   inherits: true;
-  initial-value: #7c4dcc;
+  initial-value: #f08a24;
 }
 
-@property --roxo-escuro {
+@property --marca-escura {
   syntax: '<color>';
   inherits: true;
-  initial-value: #6a3db8;
+  initial-value: #d4731a;
+}
+
+/* O texto sobre a marca troca para branco só no meio da transição das cores da capa:
+   trocar de uma vez deixaria texto branco sobre o laranja por quase um segundo */
+@property --sobre-marca {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1a1210;
 }
 
 @property --destaque {
   syntax: '<color>';
   inherits: true;
-  initial-value: #b18cf0;
+  initial-value: #f4a256;
 }
 
 *,
@@ -69,6 +82,14 @@ body {
 
 [hidden] {
   display: none !important;
+}
+
+/* Títulos em Syne, larga e pesada, como o nome de um disco */
+h1,
+h2 {
+  font-family: var(--titulo);
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 /* Some da tela, mas o leitor de tela continua lendo. */
@@ -149,13 +170,13 @@ h2[tabindex='-1']:focus {
 }
 
 .botao--principal {
-  background: var(--roxo);
-  border-color: var(--roxo);
-  color: #fff;
+  background: var(--marca);
+  border-color: var(--marca);
+  color: var(--sobre-marca);
 }
 
 .botao--principal:hover:not(:disabled) {
-  background: var(--roxo-escuro);
+  background: var(--marca-escura);
 }
 
 /* Botão principal com movimento (o mesmo do "Ver projetos" do portfólio): sobe e brilha na cor */
@@ -169,7 +190,7 @@ h2[tabindex='-1']:focus {
 
 .botao--vivo:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--roxo) 45%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--marca) 45%, transparent);
 }
 
 .botao--vivo:active:not(:disabled) {
@@ -201,7 +222,7 @@ h2[tabindex='-1']:focus {
 }
 
 input[type='range'] {
-  accent-color: var(--roxo);
+  accent-color: var(--marca);
 }
 
 /* ---------- progresso ---------- */
@@ -215,7 +236,7 @@ input[type='range'] {
 
 .progresso__barra {
   height: 100%;
-  background: var(--roxo);
+  background: var(--marca);
   transition: width 0.4s var(--ease-out);
 }
 
@@ -264,14 +285,14 @@ input[type='range'] {
 .spot::before {
   inset: 0;
   z-index: -1;
-  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%), rgb(177 140 240 / 0.08), transparent 60%);
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%), rgb(240 138 36 / 0.08), transparent 60%);
 }
 
 .spot::after {
   inset: -1px;
   padding: 1px;
   z-index: 2;
-  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgb(177 140 240 / 0.6), transparent 70%);
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgb(240 138 36 / 0.6), transparent 70%);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -351,20 +372,22 @@ input[type='range'] {
     animation: sair 0.15s ease-out both !important;
   }
 
-  /* A cascata de entrada e as faixas de pranchas do lobby ficam paradas */
+  /* A cascata de entrada fica parada */
   .aba-tela--entrando .secao > *,
-  .aba-tela--entrando .lista > li,
-  .lobby__trilho,
-  .lobby__conteudo > * {
+  .aba-tela--entrando .lista > li {
     animation: none !important;
+  }
+
+  /* O equalizador parado viraria uma linha tracejada sobre a letra: some de vez */
+  .tela-musica__eq {
+    display: none;
   }
 
   .cartao.spot:hover,
   .cartao.spot:has(:focus-visible),
   .botao--vivo:hover:not(:disabled),
   .musica:hover .musica__capa img,
-  .inicio__logo:hover,
-  .lobby__destaque:hover {
+  .inicio__logo:hover {
     transform: none !important;
   }
 }

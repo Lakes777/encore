@@ -15,7 +15,7 @@ a **voz principal**, os **vocais de apoio** e o **instrumental** com IA e mostra
   <img src="docs/demo.gif" alt="Demonstração: começando na página inicial, indo à aba Buscar e procurando Like a Stone do Audioslave, com as opções de qualidade e a prévia tocando; abrindo Bat Country em Minhas músicas, clicando numa linha da letra para pular até ela, tocando com as palavras acendendo no ritmo, silenciando a voz principal e passando pelas abas Treino e Ajustes" width="800">
 </p>
 
-![Página inicial: o nome Encore, os destaques do projeto (voz separada com IA, letra sincronizada e modo treino) e o botão Começar, com pranchas de áudio passando no fundo](docs/lobby.png)
+![Página inicial no tema Vinil: "Lado A", o nome Encore, as faixas 01 a 03 (voz separada com IA, letra sincronizada e modo treino) e o botão Começar, com um toca-discos girando ao lado](docs/lobby.png)
 
 ![Aba Minhas músicas: a lista de músicas prontas, cada uma com capa, título limpo, tom e botões de prévia, letra, fundo, exportar e apagar](docs/inicio.png)
 
@@ -41,7 +41,7 @@ voltar, avançar e guardar o link):
 
 | Endereço | Tela |
 |---|---|
-| `#/` | Início: a apresentação do projeto, com as pranchas passando no fundo |
+| `#/` | Início: a apresentação do projeto, com um toca-discos girando ao lado |
 | `#/musicas` | Minhas músicas: as prontas, com capa, tom e prévia |
 | `#/buscar` | Buscar no YouTube e mandar para a fila |
 | `#/fila` | Fila: o progresso de cada música sendo preparada |
@@ -154,7 +154,6 @@ web/                 # Site em React + TypeScript (Vite)
   src/logica/        # Cliente da API, tipos, letra e sincronia das faixas (funções puras)
   src/componentes/   # Busca, fila, lista, diálogos de letra e fundo, volumes, letra
   src/telas/         # TelaInicio (abas: apresentação, músicas, busca e fila), TelaLobby e TelaMusica (o player)
-  public/pranchas/   # Desenhos do fundo da apresentação (SVG próprios)
   tests/
 ```
 
@@ -230,6 +229,7 @@ Fase 1: karaokê
 - [x] Exportar e importar uma música pronta (.zip), para separar no PC com placa de vídeo e levar para outro computador
 - [x] Interface nova: capas na lista e na fila, título limpo (sem "[Official Video]"), controles da música em abas (Volumes, Treino, Ajustes) e gaveta de baixo no celular, e a tela lembra a última aba aberta
 - [x] Lobby de apresentação, início em abas e destaques na cor da capa
+- [x] Identidade visual própria ("Vinil": laranja anos 70, Syne nos títulos, toca-discos na apresentação, lista como "Lado A" com capas redondas e equalizador atrás da letra)
 - [ ] Levar velocidade e metrônomo para o modo instrumento quando ele existir
 - [ ] "Refazer em Alta" para trocar a separação de uma música já pronta
 

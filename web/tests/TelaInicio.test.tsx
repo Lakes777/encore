@@ -140,6 +140,18 @@ describe('abas', () => {
     expect(screen.getByLabelText('Prévia de Help!')).toBeInTheDocument()
   })
 
+  it('Minhas músicas é o "Lado A": cada música com o número da faixa (enfeite)', async () => {
+    chamadas.musicas.mockResolvedValue([musica(), musica({ id: 'b2c3d4e5f6a7', titulo: 'Bat Country' })])
+    render(<TelaInicio aba="musicas" />)
+    await screen.findByRole('heading', { name: 'Bat Country' })
+    const lado = document.querySelector('.secao__lado')!
+    expect(lado).toHaveTextContent('Lado A')
+    expect(lado).toHaveAttribute('aria-hidden', 'true')
+    const faixas = [...document.querySelectorAll('.musica__faixa')]
+    expect(faixas.map((f) => f.textContent)).toEqual(['01', '02'])
+    expect(faixas.every((f) => f.getAttribute('aria-hidden') === 'true')).toBe(true)
+  })
+
   it('os erros de rede aparecem em qualquer aba, fora dos painéis', async () => {
     chamadas.musicas.mockRejectedValue(new ErroApi(0, 'O servidor do karaokê não respondeu.'))
     chamadas.fila.mockRejectedValue(new ErroApi(500, 'A fila não respondeu.'))

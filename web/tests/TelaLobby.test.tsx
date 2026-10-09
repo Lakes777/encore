@@ -4,7 +4,6 @@ import App, { SAIDA_DA_TELA } from '../src/App.tsx'
 import { api } from '../src/logica/api.ts'
 import type { Musica } from '../src/logica/tipos.ts'
 import { SAIDA_DA_ABA, TelaInicio } from '../src/telas/TelaInicio.tsx'
-import { repeticoesDoConjunto } from '../src/logica/pranchas.ts'
 import { LINK_GITHUB, TelaLobby } from '../src/telas/TelaLobby.tsx'
 
 // Troca as chamadas de rede por funções falsas; o ErroApi continua o de verdade.
@@ -50,9 +49,13 @@ describe('lobby', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Encore' })).toBeVisible()
     expect(within(screen.getByRole('list')).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.getByRole('link', { name: /ver o código no github/i })).toHaveAttribute('href', LINK_GITHUB)
-    // As pranchas do fundo são decoração: o leitor de tela não as lê
+    // O toca-discos é decoração: o leitor de tela não o lê
     expect(screen.queryAllByRole('img')).toHaveLength(0)
-    expect(document.querySelectorAll('.lobby__prancha').length).toBeGreaterThan(0)
+    expect(document.querySelector('.lobby__toca')).toHaveAttribute('aria-hidden', 'true')
+    expect(document.querySelector('.lobby__disco')).not.toBeNull()
+    // As faixas do lado A são numeradas (o número é enfeite)
+    expect(screen.getByText('Voz separada com IA')).toBeVisible()
+    expect([...document.querySelectorAll('.lobby__numero')].map((n) => n.textContent)).toEqual(['01', '02', '03'])
   })
 
   it('com músicas prontas, Começar leva para Minhas músicas e mostra quantas são', () => {
@@ -72,26 +75,17 @@ describe('lobby', () => {
     expect(screen.getByRole('link', { name: 'Começar' })).toHaveAttribute('href', '#/musicas')
   })
 
-  it('cada metade do trilho passa da largura da tela, mesmo em telas largas', () => {
-    // conjunto largo: 6 pranchas x 388 px = 2328 px; estreito: 6 x 238 = 1428 px
-    expect(repeticoesDoConjunto(1280, false)).toBe(1)
-    expect(repeticoesDoConjunto(2328, false)).toBe(1)
-    expect(repeticoesDoConjunto(2560, false)).toBe(2)
-    expect(repeticoesDoConjunto(5120, false)).toBe(3)
-    expect(repeticoesDoConjunto(390, true)).toBe(1)
-    expect(repeticoesDoConjunto(1500, true)).toBe(2)
-    expect(repeticoesDoConjunto(0, false)).toBe(1)
-  })
-
-  it('o trilho tem as duas metades iguais', () => {
-    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(2600)
+  it('com a aba do navegador escondida, o disco para', () => {
+    const escondido = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
     try {
       render(<TelaLobby prontas={null} />)
-      const trilho = document.querySelector('.lobby__trilho')!
-      const nomes = [...trilho.querySelectorAll('img')].map((img) => img.getAttribute('src'))
-      // 2600 px pede 2 conjuntos de 6 por metade
-      expect(nomes).toHaveLength(24)
-      expect(nomes.slice(0, 12)).toEqual(nomes.slice(12))
+      const lobby = document.querySelector('.lobby')!
+      expect(lobby).not.toHaveClass('lobby--pausado')
+      escondido.mockReturnValue(true)
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+      expect(lobby).toHaveClass('lobby--pausado')
     } finally {
       vi.restoreAllMocks()
     }

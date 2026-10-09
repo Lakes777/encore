@@ -1,6 +1,6 @@
-/* Lobby: a página de apresentação. No fundo, três faixas de pranchas desenhadas
-   passando devagar, bem apagadas; por cima, uma vinheta escura no centro (para o
-   texto ficar legível), uma grade fina e um granulado leve. */
+/* Lobby: a página de apresentação, como a capa de um disco. O texto fica à esquerda,
+   no estilo da contracapa (lado A, faixas numeradas), e um toca-discos à direita:
+   o disco gira devagar com a agulha em cima. */
 
 .lobby {
   position: relative;
@@ -8,188 +8,63 @@
   min-height: calc(100vh - 160px);
   min-height: calc(100svh - 160px);
   display: grid;
-  place-items: center;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 32px;
   overflow: hidden;
   isolation: isolate;
 }
 
-/* ---------- fundo ---------- */
+/* ---------- texto ---------- */
 
-.lobby__fundo {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 28px;
-  overflow: hidden;
-  pointer-events: none;
+.lobby__etiqueta {
+  margin: 0;
+  color: var(--destaque);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
-
-.lobby__faixa {
-  overflow: hidden;
-}
-
-/* O trilho leva o conjunto de pranchas duas vezes: andar metade (-50%) deixa a
-   segunda cópia exatamente onde a primeira estava, e o loop não tem emenda */
-.lobby__trilho {
-  display: flex;
-  gap: 28px;
-  width: max-content;
-  padding-right: 28px;
-  will-change: transform;
-  animation: deslizar 64s linear infinite;
-}
-
-.lobby__faixa--2 .lobby__trilho {
-  animation-duration: 78s;
-  animation-direction: reverse;
-}
-
-.lobby__faixa--3 .lobby__trilho {
-  animation-duration: 96s;
-}
-
-/* Aba do navegador escondida: as faixas param */
-.lobby--pausado .lobby__trilho {
-  animation-play-state: paused;
-}
-
-@keyframes deslizar {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-
-.lobby__prancha {
-  display: block;
-  width: 360px;
-  height: auto;
-  aspect-ratio: 520 / 300;
-  opacity: 0.16;
-  user-select: none;
-}
-
-.lobby__faixa--2 .lobby__prancha {
-  opacity: 0.13;
-}
-
-/* Grade fina de papel quadriculado */
-.lobby__grade {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px);
-  background-size: 48px 48px;
-}
-
-/* Escurece o centro (onde fica o texto) e as bordas */
-.lobby__vinheta {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 46% 52% at 50% 50%, rgb(13 14 16 / 0.92), rgb(13 14 16 / 0.7) 55%, transparent 100%),
-    radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(13 14 16 / 0.85) 100%);
-}
-
-/* Granulado leve (ruído SVG) */
-.lobby__grao {
-  position: absolute;
-  inset: 0;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
-}
-
-/* ---------- conteúdo ---------- */
-
-.lobby__conteudo {
-  width: 100%;
-  max-width: 720px;
-  padding: 40px 0;
-  text-align: center;
-}
-
-/* Entrada em cascata: título, frase, destaques, botões, números */
-.lobby__conteudo > * {
-  animation: surgir 0.6s var(--ease-texto) both;
-}
-
-.lobby__conteudo > :nth-child(2) { animation-delay: 0.08s; }
-.lobby__conteudo > :nth-child(3) { animation-delay: 0.16s; }
-.lobby__conteudo > :nth-child(4) { animation-delay: 0.24s; }
-.lobby__conteudo > :nth-child(5) { animation-delay: 0.32s; }
 
 .lobby__titulo {
-  margin: 0;
-  font-size: clamp(2.6rem, 9vw, 4.25rem);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  margin: 10px 0 14px;
+  font-size: clamp(3rem, 7vw, 4.8rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
 }
 
 .lobby__frase {
-  max-width: 34em;
-  margin: 16px auto 0;
-  color: #b9bcc3;
-  font-size: 1.1rem;
+  max-width: 440px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.05rem;
 }
 
-.lobby__destaques {
+/* As vantagens como faixas do lado A, em letra de máquina */
+.lobby__faixas {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin: 32px 0 0;
+  gap: 6px;
+  margin: 24px 0 0;
   padding: 0;
   list-style: none;
-  text-align: left;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
-.lobby__destaque {
+.lobby__faixa {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: rgb(22 23 26 / 0.8);
-  transition:
-    transform 0.35s var(--ease-out),
-    border-color 0.35s,
-    box-shadow 0.35s;
+  gap: 12px;
 }
 
-/* Cartões que saltam um pouco com o mouse, como no portfólio e no Controle de Gastos */
-@media (hover: hover) {
-  .lobby__destaque:hover {
-    transform: translateY(-4px);
-    border-color: #3a3d44;
-    box-shadow: 0 16px 36px rgb(0 0 0 / 0.35);
-  }
+.lobby__faixa strong {
+  color: var(--text);
+  font-weight: 400;
 }
 
-.lobby__destaque strong {
-  display: block;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.lobby__destaque .texto-fraco {
-  display: block;
-  margin-top: 2px;
-}
-
-.lobby__icone {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: rgb(177 140 240 / 0.12);
+.lobby__numero {
+  flex: none;
   color: var(--destaque);
 }
 
@@ -197,99 +72,164 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: 12px 24px;
-  margin-top: 32px;
+  gap: 14px 22px;
+  margin-top: 28px;
 }
 
 .lobby__comecar {
-  min-height: 48px;
-  padding: 0 28px;
-  font-size: 1.05rem;
-  font-weight: 600;
-  text-decoration: none;
+  min-height: 46px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-weight: 700;
 }
 
 .lobby__codigo {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 2px;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
   text-decoration: none;
-  transition: color 0.2s;
 }
 
 .lobby__codigo:hover {
   color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 .lobby__numeros {
-  margin: 20px 0 0;
-  font-variant-numeric: tabular-nums;
+  margin: 16px 0 0;
+  font-family: var(--mono);
+}
+
+/* ---------- toca-discos ---------- */
+
+.lobby__toca {
+  position: relative;
+  justify-self: center;
+  width: min(430px, 100%);
+  aspect-ratio: 1;
+}
+
+/* Sulcos (gradiente radial repetido), selo laranja e um reflexo de luz que gira junto */
+.lobby__disco {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--marca) 0 22%, #1a1210 22.3% 23%, transparent 23.3%),
+    repeating-radial-gradient(circle, #0c0b0b 0 2px, #1b1918 2px 3px),
+    #0c0b0b;
+  box-shadow:
+    0 30px 70px rgb(0 0 0 / 0.6),
+    inset 0 0 0 2px #262220;
+  animation: lobby-girar 6s linear infinite;
+}
+
+.lobby__disco::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 30deg,
+    transparent 0 40deg,
+    rgb(255 255 255 / 0.07) 60deg,
+    transparent 80deg 220deg,
+    rgb(255 255 255 / 0.05) 240deg,
+    transparent 260deg
+  );
+}
+
+.lobby__selo {
+  translate: 0 -34px;
+  color: #1a1210;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.lobby__furo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px;
+  border-radius: 50%;
+  background: var(--bg);
+}
+
+/* O braço da agulha, preso fora do disco e apoiado nos sulcos de fora */
+.lobby__braco {
+  position: absolute;
+  top: -6px;
+  right: 6%;
+  width: 30px;
+  height: 60%;
+  transform: rotate(24deg);
+  transform-origin: 50% 20px;
+}
+
+.lobby__braco::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 11px;
+  width: 8px;
+  height: calc(100% - 30px);
+  border-radius: 4px;
+  background: linear-gradient(90deg, #9a938b, #d8d1c8, #8a837b);
+}
+
+.lobby__braco::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 4px;
+  width: 22px;
+  height: 36px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2a2624;
+}
+
+@keyframes lobby-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Com a aba do navegador escondida, o disco para (classe posta pelo TelaLobby) */
+.lobby--pausado .lobby__disco {
+  animation-play-state: paused;
 }
 
 /* ---------- celular ---------- */
 
-@media (max-width: 640px) {
-  .lobby__fundo,
-  .lobby__trilho {
-    gap: 18px;
-  }
-
-  .lobby__trilho {
-    padding-right: 18px;
-  }
-
-  .lobby__prancha {
-    width: 220px;
-  }
-
-  .lobby__conteudo {
-    padding: 32px 0;
-  }
-
-  .lobby__frase {
-    font-size: 1rem;
-  }
-
-  .lobby__destaques {
-    grid-template-columns: 1fr;
+@media (max-width: 760px) {
+  .lobby {
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
+    padding-block: 12px 32px;
   }
 
-  .lobby__destaque {
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
+  /* O disco vem primeiro, menor, e o texto embaixo */
+  .lobby__toca {
+    order: -1;
+    width: min(240px, 70%);
   }
 
-  .lobby__icone {
-    flex: none;
+  .lobby__selo {
+    translate: 0 -20px;
+    font-size: 0.55rem;
   }
 
-  /* Na tela estreita o texto ocupa quase tudo: a vinheta escurece menos para o fundo aparecer */
-  .lobby__vinheta {
-    background:
-      radial-gradient(ellipse 60% 45% at 50% 50%, rgb(13 14 16 / 0.7), rgb(13 14 16 / 0.45) 60%, transparent 100%),
-      radial-gradient(ellipse at 50% 50%, transparent 60%, rgb(13 14 16 / 0.8) 100%);
+  .lobby__acoes .botao {
+    flex: 1;
   }
-
-  .lobby__prancha {
-    opacity: 0.2;
-  }
-}
-
-
-.lobby__etiqueta {
-  margin: 8px 0 0;
-  color: #b9bcc3;
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
 }
